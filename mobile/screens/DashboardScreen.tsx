@@ -10,7 +10,7 @@ const mockReadings = [
   { id: '5', date: '11 Mar', value: '140 mg/dL' },
 ];
 
-export default function DashboardScreen() {
+export default function DashboardScreen({ navigation }: any) {
   const renderItem = ({ item }) => (
     <View style={styles.readingItem}>
       <Text style={styles.readingDate}>{item.date}</Text>
@@ -47,7 +47,11 @@ export default function DashboardScreen() {
       </View>
 
       {/* FAB */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+      <TouchableOpacity 
+        style={styles.fab} 
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate('AddLogScreen')}
+      >
         <Ionicons name="add" size={32} color="#fff" />
       </TouchableOpacity>
     </SafeAreaView>
