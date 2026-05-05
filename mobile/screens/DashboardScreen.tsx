@@ -1,20 +1,29 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { StyleSheet, View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const mockReadings = [
-  { id: '1', date: '15 Mar', value: '145 mg/dL' },
-  { id: '2', date: '14 Mar', value: '132 mg/dL' },
-  { id: '3', date: '13 Mar', value: '110 mg/dL' },
-  { id: '4', date: '12 Mar', value: '128 mg/dL' },
-  { id: '5', date: '11 Mar', value: '140 mg/dL' },
-];
+import { DiabetesContext } from '../context/DiabetesContext';
 
 export default function DashboardScreen({ navigation }: any) {
-  const renderItem = ({ item }) => (
+  const { logs } = useContext(DiabetesContext);
+
+  const getReadingStyle = (value: number) => {
+    if (value < 70 || value > 180) {
+      return { color: '#FF5A5F' }; // Red
+    }
+    return { color: '#34C759' }; // Green
+  };
+
+  const renderItem = ({ item }: any) => (
     <View style={styles.readingItem}>
-      <Text style={styles.readingDate}>{item.date}</Text>
-      <Text style={styles.readingValue}>{item.value}</Text>
+      <View>
+        <Text style={styles.readingDate}>{item.date}</Text>
+        <View style={styles.tagBadge}>
+          <Text style={styles.tagText}>{item.tag}</Text>
+        </View>
+      </View>
+      <Text style={[styles.readingValue, getReadingStyle(item.value)]}>
+        {item.value} mg/dL
+      </Text>
     </View>
   );
 
@@ -23,9 +32,14 @@ export default function DashboardScreen({ navigation }: any) {
       {/* Custom Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>DiaMate</Text>
-        <TouchableOpacity>
-          <Ionicons name="settings-outline" size={24} color="#333" />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 16 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('MealPlannerScreen')}>
+            <Ionicons name="restaurant-outline" size={24} color="#333" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')}>
+            <Ionicons name="settings-outline" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Prominent HbA1c Block */}
@@ -38,11 +52,12 @@ export default function DashboardScreen({ navigation }: any) {
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Geçmiş Ölçümler</Text>
         <FlatList
-          data={mockReadings}
+          data={logs}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          ListEmptyComponent={<Text style={styles.emptyText}>Henüz kayıtlı ölçüm yok.</Text>}
         />
       </View>
 
@@ -74,83 +89,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EEF0F5',
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  hba1cContainer: {
-    margin: 20,
-    padding: 30,
-    backgroundColor: '#4A90E2',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  hba1cLabel: {
-    fontSize: 16,
-    color: '#E0E8F5',
-    marginBottom: 8,
-  },
-  hba1cValue: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  listContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  listTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  listContent: {
-    paddingBottom: 80, // space for FAB
-  },
-  readingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  readingDate: {
-    fontSize: 16,
-    color: '#555',
-  },
-  readingValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FF5A5F',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#FF5A5F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#333' },
+  hba1cContainer: { margin: 20, padding: 30, backgroundColor: '#4A90E2', borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
+  hba1cLabel: { fontSize: 16, color: '#E0E8F5', marginBottom: 8 },
+  hba1cValue: { fontSize: 48, fontWeight: 'bold', color: '#fff' },
+  listContainer: { flex: 1, paddingHorizontal: 20 },
+  listTitle: { fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 12 },
+  listContent: { paddingBottom: 80 },
+  readingItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  readingDate: { fontSize: 16, color: '#555', marginBottom: 4 },
+  tagBadge: { backgroundColor: '#EEF0F5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: 'flex-start' },
+  tagText: { fontSize: 12, color: '#666', fontWeight: '500' },
+  readingValue: { fontSize: 22, fontWeight: 'bold' },
+  emptyText: { textAlign: 'center', color: '#888', marginTop: 20 },
+  fab: { position: 'absolute', bottom: 30, right: 30, width: 60, height: 60, borderRadius: 30, backgroundColor: '#FF5A5F', alignItems: 'center', justifyContent: 'center', shadowColor: '#FF5A5F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
 });
