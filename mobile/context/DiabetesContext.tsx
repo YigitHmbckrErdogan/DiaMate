@@ -14,7 +14,15 @@ export interface FoodItem {
   id: string;
   name: string;
   carbs: number;
+  protein?: number;
+  fat?: number;
   historicalDose: number;
+}
+
+interface TirStats {
+  daily: number;
+  weekly: number;
+  monthly: number;
 }
 
 interface DiabetesContextProps {
@@ -22,6 +30,7 @@ interface DiabetesContextProps {
   insulinSensitivityFactor: number;
   logs: LogEntry[];
   foodDatabase: FoodItem[];
+  tirStats: TirStats;
   updateSettings: (cr: number, isf: number) => Promise<void>;
   addLog: (log: Omit<LogEntry, 'id'>) => Promise<void>;
   addFood: (food: Omit<FoodItem, 'id'>) => Promise<void>;
@@ -33,6 +42,7 @@ export const DiabetesContext = createContext<DiabetesContextProps>({
   insulinSensitivityFactor: 50,
   logs: [],
   foodDatabase: [],
+  tirStats: { daily: 0, weekly: 0, monthly: 0 },
   updateSettings: async () => { },
   addLog: async () => { },
   addFood: async () => { },
@@ -44,7 +54,40 @@ export const DiabetesProvider = ({ children }: { children: ReactNode }) => {
   const [insulinSensitivityFactor, setIsf] = useState<number>(50);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [foodDatabase, setFoodDatabase] = useState<FoodItem[]>([]);
+  const [tirStats, setTirStats] = useState<TirStats>({ daily: 0, weekly: 0, monthly: 0 });
   const [isLoading, setIsLoading] = useState(true);
+
+  // Calculate TIR Stats
+  useEffect(() => {
+    const calculateTir = (periodLogs: LogEntry[]) => {
+      if (periodLogs.length === 0) return 0;
+      const inRange = periodLogs.filter(log => log.value >= 70 && log.value <= 180).length;
+      return Math.round((inRange / periodLogs.length) * 100);
+    };
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    const getDaysDifference = (dateStr: string) => {
+      const date = new Date(`${dateStr} ${currentYear}`);
+      if (isNaN(date.getTime())) return 0;
+      if (date > now) {
+        date.setFullYear(currentYear - 1);
+      }
+      const diffTime = Math.abs(now.getTime() - date.getTime());
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    };
+
+    const dailyLogs = logs.filter(log => getDaysDifference(log.date) <= 1);
+    const weeklyLogs = logs.filter(log => getDaysDifference(log.date) <= 7);
+    const monthlyLogs = logs.filter(log => getDaysDifference(log.date) <= 30);
+
+    setTirStats({
+      daily: calculateTir(dailyLogs.length > 0 ? dailyLogs : logs),
+      weekly: calculateTir(weeklyLogs.length > 0 ? weeklyLogs : logs),
+      monthly: calculateTir(monthlyLogs.length > 0 ? monthlyLogs : logs),
+    });
+  }, [logs]);
 
   // Load from AsyncStorage
   useEffect(() => {
@@ -131,7 +174,7 @@ export const DiabetesProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <DiabetesContext.Provider value={{ carbRatio, insulinSensitivityFactor, logs, foodDatabase, updateSettings, addLog, addFood, isLoading }}>
+    <DiabetesContext.Provider value={{ carbRatio, insulinSensitivityFactor, logs, foodDatabase, tirStats, updateSettings, addLog, addFood, isLoading }}>
       {children}
     </DiabetesContext.Provider>
   );
