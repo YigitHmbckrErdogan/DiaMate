@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { StyleSheet, View, Text, TextInput, FlatList, Pressable, Platform, Alert } from 'react-native';
+import { StyleSheet, View, Text, TextInput, FlatList, Pressable, Platform, Alert, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DiabetesContext, FoodItem } from '../context/DiabetesContext';
 import { getClinicalInsight } from '../utils/ExpertAdviceEngine';
@@ -21,6 +21,7 @@ export default function MealPlannerCore() {
   // Selected Meal State
   const [selectedMeal, setSelectedMeal] = useState<SelectedFood[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isExerciseMode, setIsExerciseMode] = useState(false);
 
   const filteredFoods = foodDatabase.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -78,7 +79,8 @@ export default function MealPlannerCore() {
   const totalCarbs = selectedMeal.reduce((sum, item) => sum + (item.carbs * item.quantity), 0);
   const totalProtein = selectedMeal.reduce((sum, item) => sum + ((item.protein || 0) * item.quantity), 0);
   const totalFat = selectedMeal.reduce((sum, item) => sum + ((item.fat || 0) * item.quantity), 0);
-  const totalDose = selectedMeal.reduce((sum, item) => sum + (item.historicalDose * item.quantity), 0);
+  const baseDose = selectedMeal.reduce((sum, item) => sum + (item.historicalDose * item.quantity), 0);
+  const totalDose = isExerciseMode ? baseDose * 0.8 : baseDose;
 
   const insight = getClinicalInsight(totalProtein, totalFat);
 
@@ -137,7 +139,7 @@ export default function MealPlannerCore() {
                     <Text style={styles.foodName}>{item.name}</Text>
                     <Text style={styles.foodDetails}>{item.carbs}g CHO | {item.historicalDose} Ünite</Text>
                   </View>
-                  <Ionicons name="add-circle" size={24} color="#4A90E2" />
+                  <Ionicons name="add-circle" size={24} color="#10b981" />
                 </Pressable>
               )}
             />
@@ -177,13 +179,36 @@ export default function MealPlannerCore() {
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Tahmini Doz:</Text>
-                <Text style={[styles.summaryValue, { color: '#FF5A5F' }]}>{totalDose.toFixed(1)} Ünite</Text>
+                <Text style={[styles.summaryValue, { color: '#ef4444' }]}>{totalDose.toFixed(1)} Ünite</Text>
               </View>
             </View>
 
+            {/* Exercise Mode Toggle */}
+            <View style={styles.switchContainer}>
+              <View style={styles.switchLabelRow}>
+                <Ionicons name="fitness" size={20} color="#10b981" />
+                <Text style={styles.switchLabelText}>Exercise Mode</Text>
+              </View>
+              <Switch
+                value={isExerciseMode}
+                onValueChange={setIsExerciseMode}
+                trackColor={{ false: '#cbd5e1', true: '#10b981' }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            {isExerciseMode && (
+              <View style={styles.warningBanner}>
+                <Ionicons name="warning" size={20} color="#d97706" />
+                <Text style={styles.warningBannerText}>
+                  Clinical Insight: Exercise mode active. Dose reduced by 20% to prevent delayed hypoglycemia.
+                </Text>
+              </View>
+            )}
+
             {insight && (
               <View style={styles.insightBox}>
-                <Ionicons name="medical" size={24} color="#E53E3E" />
+                <Ionicons name="medical" size={24} color="#ef4444" />
                 <Text style={styles.insightText}>{insight}</Text>
               </View>
             )}
@@ -221,8 +246,8 @@ const styles = StyleSheet.create({
   inputGroup: { flex: 1, minWidth: isWeb ? 150 : '100%' },
   label: { fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8 },
   input: { backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, padding: 12, fontSize: 14, color: '#1A202C' },
-  primaryButton: { backgroundColor: '#4A90E2', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  buttonHover: { backgroundColor: '#357ABD' },
+  primaryButton: { backgroundColor: '#10b981', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  buttonHover: { backgroundColor: '#059669' },
   primaryButtonText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
   splitLayout: {
     flexDirection: isWeb ? 'row' : 'column',
@@ -244,6 +269,46 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   summaryLabel: { fontSize: 16, fontWeight: '600', color: '#4A5568' },
   summaryValue: { fontSize: 18, fontWeight: 'bold', color: '#1A202C' },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginTop: 16,
+  },
+  switchLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  switchLabelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    gap: 12,
+  },
+  warningBannerText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#92400e',
+    fontWeight: '600',
+    lineHeight: 18,
+  },
   insightBox: { marginTop: 16, padding: 16, backgroundColor: '#FFF5F5', borderColor: '#FEB2B2', borderWidth: 1, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
   insightText: { flex: 1, fontSize: 14, color: '#C53030', fontWeight: '500', lineHeight: 20 }
 });

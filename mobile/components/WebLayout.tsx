@@ -20,7 +20,7 @@ export default function WebLayout({ children, title }: WebLayoutProps) {
       {/* Sidebar */}
       <View style={styles.sidebar}>
         <View style={styles.brand}>
-          <Ionicons name="medical" size={28} color="#4A90E2" />
+          <Ionicons name="medical" size={28} color="#10b981" />
           <Text style={styles.brandText}>DiaMate</Text>
         </View>
 
@@ -29,7 +29,7 @@ export default function WebLayout({ children, title }: WebLayoutProps) {
             style={({ hovered }: any) => [styles.navItem, hovered && styles.navItemHover]}
             onPress={() => navigation.navigate('Dashboard')}
           >
-            <Ionicons name="grid-outline" size={20} color="#555" />
+            <Ionicons name="grid-outline" size={20} color="#64748b" />
             <Text style={styles.navItemText}>Dashboard</Text>
           </Pressable>
 
@@ -37,7 +37,7 @@ export default function WebLayout({ children, title }: WebLayoutProps) {
             style={({ hovered }: any) => [styles.navItem, hovered && styles.navItemHover]}
             onPress={() => navigation.navigate('MealPlannerScreen')}
           >
-            <Ionicons name="restaurant-outline" size={20} color="#555" />
+            <Ionicons name="restaurant-outline" size={20} color="#64748b" />
             <Text style={styles.navItemText}>Food DB</Text>
           </Pressable>
 
@@ -45,7 +45,7 @@ export default function WebLayout({ children, title }: WebLayoutProps) {
             style={({ hovered }: any) => [styles.navItem, hovered && styles.navItemHover]}
             onPress={() => navigation.navigate('SettingsScreen')}
           >
-            <Ionicons name="settings-outline" size={20} color="#555" />
+            <Ionicons name="settings-outline" size={20} color="#64748b" />
             <Text style={styles.navItemText}>Settings</Text>
           </Pressable>
         </View>
@@ -76,11 +76,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#F4F6F8', // Light gray background for the app shell
+    backgroundColor: '#F8FAFC', // Crisp Slate 50 background for airy medical shell
   },
   sidebar: {
     width: 250,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRightWidth: 1,
     borderRightColor: '#E2E8F0',
     paddingVertical: 20,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   brandText: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#1A202C',
+    color: '#0F172A',
     letterSpacing: -0.5,
   },
   navMenu: {
@@ -116,12 +116,12 @@ const styles = StyleSheet.create({
     cursor: 'pointer',
   },
   navItemHover: {
-    backgroundColor: '#EDF2F7',
+    backgroundColor: '#F1F5F9',
   },
   navItemText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#4A5568',
+    color: '#475569',
   },
   mainArea: {
     flex: 1,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   },
   header: {
     height: 70,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
     flexDirection: 'row',
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1A202C',
+    color: '#0F172A',
   },
   headerRight: {
     flexDirection: 'row',
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#10b981',
     justifyContent: 'center',
     alignItems: 'center',
   },
