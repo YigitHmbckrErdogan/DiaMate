@@ -177,10 +177,10 @@ export default function DashboardScreen({ navigation }: any) {
             <Text style={styles.headerTitleMobile}>{t('brandName', language)}</Text>
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity onPress={() => navigation.navigate('MealPlannerScreen')} style={styles.iconBtn}>
-                <Ionicons name="restaurant-outline" size={22} color="#E2E8F0" />
+                <Ionicons name="restaurant-outline" size={22} color="#1E293B" />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={styles.iconBtn}>
-                <Ionicons name="settings-outline" size={22} color="#E2E8F0" />
+                <Ionicons name="settings-outline" size={22} color="#1E293B" />
               </TouchableOpacity>
             </View>
           </View>
@@ -191,12 +191,12 @@ export default function DashboardScreen({ navigation }: any) {
           {/* THE AI CARD */}
           <Animated.View entering={FadeInUp.duration(500).springify()} style={[isWeb ? styles.aiCardWeb : styles.aiCardMobile]}>
             <View style={styles.aiCardHeaderRow}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
-                <Ionicons name="sparkles" size={20} color={isWeb ? '#8B5CF6' : '#C084FC'} />
-                <Text style={[styles.aiCardTitle, { color: isWeb ? '#6D28D9' : '#E0E7FF' }]} numberOfLines={1} adjustsFontSizeToFit>{t('aiPredictiveTitle', language)}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, marginRight: 8 }}>
+                <Ionicons name="sparkles" size={20} color="#7C3AED" />
+                <Text style={[styles.aiCardTitle, { color: '#1E293B', flexShrink: 1 }]} numberOfLines={2} adjustsFontSizeToFit>{t('aiPredictiveTitle', language)}</Text>
               </View>
-              <View style={[styles.aiBadge, { backgroundColor: isWeb ? 'rgba(139, 92, 246, 0.1)' : 'rgba(192, 132, 252, 0.2)' }]}>
-                <Text style={[styles.aiBadgeText, { color: isWeb ? '#7C3AED' : '#C084FC' }]}>{predictiveResult.block} {t('aiBlockSuffix', language)}</Text>
+              <View style={[styles.aiBadge, { backgroundColor: 'rgba(124, 58, 237, 0.1)' }]}>
+                <Text style={[styles.aiBadgeText, { color: '#7C3AED' }]}>{predictiveResult.block} {t('aiBlockSuffix', language)}</Text>
               </View>
             </View>
             <View style={styles.aiTextContainer}>
@@ -228,7 +228,7 @@ export default function DashboardScreen({ navigation }: any) {
 
               <View style={styles.heroMainRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-                  <Text style={[isWeb ? styles.hba1cValueWeb : styles.glassHeroValue, { color: isWeb ? '#0F172A' : '#2DD4BF' }]}>
+                  <Text style={[isWeb ? styles.hba1cValueWeb : styles.glassHeroValue, { color: '#2DD4BF' }]}>
                     {latestLog.value}
                   </Text>
                   <Text style={styles.heroUnit}>mg/dL</Text>
@@ -356,7 +356,7 @@ export default function DashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: isWeb ? '#F8FAFC' : '#020617', // Global Unified Theme: Deep Space Navy
+    backgroundColor: '#F4F6F8', // Global Unified Theme: Clinical Light
     paddingTop: !isWeb ? StatusBar.currentHeight : 0,
   },
   
@@ -364,14 +364,14 @@ const styles = StyleSheet.create({
   aiCardWeb: {
     backgroundColor: '#EEF2FF',
     padding: 28,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#C084FC',
-    shadowColor: '#7C3AED',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.05,
     shadowRadius: 12,
-    elevation: 3,
+    elevation: 2,
     marginBottom: 20,
     marginTop: isWeb ? 0 : 4,
   },
@@ -380,15 +380,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 12,
     padding: 26,
-    backgroundColor: 'rgba(99, 102, 241, 0.12)', 
+    backgroundColor: '#EEF2FF', 
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(192, 132, 252, 0.35)', 
+    borderColor: '#C084FC', 
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
   },
   aiCardHeaderRow: {
     flexDirection: 'row',
@@ -412,15 +412,15 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   aiTextContainer: {
-    flexShrink: 1,
-    flexWrap: 'wrap',
+    flex: 1,
     flexDirection: 'row',
   },
   aiCardText: {
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 24,
     fontWeight: '600',
     flexShrink: 1,
+    flexWrap: 'wrap',
   },
 
   // Web specific components
@@ -428,38 +428,38 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 30, 
     backgroundColor: '#FFFFFF',
-    borderRadius: 16, 
+    borderRadius: 20, 
     borderWidth: 1,
     borderColor: '#E2E8F0',
     alignItems: 'center', 
     justifyContent: 'center', 
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 12,
     elevation: 2,
   },
   hba1cLabelWeb: { fontSize: 16, color: '#64748B', marginBottom: 8, fontWeight: '500' },
-  hba1cValueWeb: { fontSize: 48, fontWeight: 'bold', color: '#10b981' },
+  hba1cValueWeb: { fontSize: 48, fontWeight: 'bold', color: '#10B981' },
   cardWeb: {
     backgroundColor: '#FFFFFF',
     padding: 24,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 12,
     elevation: 2,
     marginBottom: 20,
   },
-  listTitleWeb: { fontSize: 18, fontWeight: '700', color: '#0F172A', marginBottom: 6 },
+  listTitleWeb: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 6 },
   subtextWeb: { fontSize: 13, color: '#64748B', marginBottom: 16 },
   legendTextWeb: { fontSize: 13, color: '#64748B' },
-  emptyTextWeb: { textAlign: 'center', color: '#64748b', marginTop: 20 },
+  emptyTextWeb: { textAlign: 'center', color: '#64748B', marginTop: 20, fontStyle: 'italic' },
   latestReadingItemWeb: {
-    borderColor: '#10b981',
+    borderColor: '#2DD4BF',
     backgroundColor: '#ECFDF5',
   },
 
@@ -470,69 +470,69 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#020617', // Deep Space Navy base
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: '#E2E8F0',
   },
-  headerTitleMobile: { fontSize: 22, fontWeight: 'bold', color: '#FFFFFF', letterSpacing: 0.5 },
+  headerTitleMobile: { fontSize: 22, fontWeight: 'bold', color: '#1E293B', letterSpacing: 0.5 },
   iconBtn: {
     width: 40, 
     height: 40, 
     borderRadius: 20, 
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#F8FAFC',
     alignItems: 'center', 
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: '#E2E8F0',
   },
   scrollContent: { paddingBottom: 100 },
   
-  // Premium Glassmorphism styling tokens
+  // Premium Glassmorphism styling tokens -> Now Clinical Light Tokens
   glassCard: {
     marginHorizontal: 20,
     marginBottom: 16,
     marginTop: 4,
     padding: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: '#E2E8F0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
   },
   heroCardHighlight: {
-    backgroundColor: 'rgba(13, 148, 136, 0.08)',
-    borderColor: 'rgba(13, 148, 136, 0.3)',
+    backgroundColor: '#F0FDFA',
+    borderColor: '#5EEAD4',
   },
   adviceCardHighlight: {
-    backgroundColor: 'rgba(245, 158, 11, 0.08)',
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FDE68A',
     borderLeftWidth: 4,
     borderLeftColor: '#F59E0B',
   },
-  glassLabelHighlight: { fontSize: 12, color: '#2DD4BF', fontWeight: '700', letterSpacing: 1 },
-  glassHeroValue: { fontSize: 44, fontWeight: '800', color: '#2DD4BF', letterSpacing: -1 },
+  glassLabelHighlight: { fontSize: 12, color: '#0D9488', fontWeight: '700', letterSpacing: 1 },
+  glassHeroValue: { fontSize: 44, fontWeight: '800', color: '#0F766E', letterSpacing: -1 },
   
   // Critical Risk Card
   criticalRiskCard: {
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
-    borderColor: 'rgba(239, 68, 68, 0.4)',
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
     borderLeftWidth: 4,
     borderLeftColor: '#EF4444',
   },
-  criticalRiskTitle: { fontSize: 15, fontWeight: 'bold', color: '#FCA5A5', letterSpacing: 0.5 },
-  criticalRiskText: { fontSize: 14, color: '#FEE2E2', lineHeight: 22, fontWeight: '600' },
-  criticalRiskSubtext: { fontSize: 13, color: '#FCA5A5', marginTop: 8, fontStyle: 'italic', fontWeight: '500' },
+  criticalRiskTitle: { fontSize: 15, fontWeight: 'bold', color: '#B91C1C', letterSpacing: 0.5 },
+  criticalRiskText: { fontSize: 14, color: '#7F1D1D', lineHeight: 22, fontWeight: '600' },
+  criticalRiskSubtext: { fontSize: 13, color: '#991B1B', marginTop: 8, fontStyle: 'italic', fontWeight: '500' },
 
   // Latest Hero Row Layout
   heroCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   livePulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#2DD4BF' },
-  heroTimestamp: { fontSize: 12, color: '#94A3B8', fontWeight: '500' },
+  heroTimestamp: { fontSize: 12, color: '#64748B', fontWeight: '500' },
   heroMainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  heroUnit: { fontSize: 18, fontWeight: '600', color: '#94A3B8' },
+  heroUnit: { fontSize: 18, fontWeight: '600', color: '#64748B' },
   heroTrendBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -545,36 +545,36 @@ const styles = StyleSheet.create({
   heroTrendText: { fontSize: 15, fontWeight: '800' },
 
   // Advice Card Layout
-  adviceCardTitle: { fontSize: 14, fontWeight: 'bold', color: '#FBBF24', letterSpacing: 0.5 },
-  adviceCardText: { fontSize: 14, color: '#F1F5F9', lineHeight: 20, fontWeight: '500' },
-  adviceFoodContext: { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(245, 158, 11, 0.15)' },
-  adviceFoodContextText: { fontSize: 12, color: '#D97706', fontStyle: 'italic' },
+  adviceCardTitle: { fontSize: 14, fontWeight: 'bold', color: '#D97706', letterSpacing: 0.5 },
+  adviceCardText: { fontSize: 14, color: '#92400E', lineHeight: 20, fontWeight: '500' },
+  adviceFoodContext: { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#FDE68A' },
+  adviceFoodContextText: { fontSize: 12, color: '#B45309', fontStyle: 'italic' },
 
   // Progress Bar Overhaul
-  glassCardTitle: { fontSize: 17, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 },
-  glassCardSubtitle: { fontSize: 13, color: '#94A3B8', marginBottom: 16 },
-  progressBarContainer: { height: 14, flexDirection: 'row', borderRadius: 7, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.08)', marginBottom: 16 },
+  glassCardTitle: { fontSize: 17, fontWeight: '700', color: '#1E293B', marginBottom: 4 },
+  glassCardSubtitle: { fontSize: 13, color: '#64748B', marginBottom: 16 },
+  progressBarContainer: { height: 14, flexDirection: 'row', borderRadius: 7, overflow: 'hidden', backgroundColor: '#F1F5F9', marginBottom: 16 },
   progressSegment: { height: '100%' },
   progressLegend: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendTextMobile: { fontSize: 13, color: '#CBD5E1' },
+  legendTextMobile: { fontSize: 13, color: '#64748B' },
 
   // LOGS LIST OVERHAUL: GRID & ITEM TOKENS
   gridHeaderMainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  gridHeaderSubText: { fontSize: 12, color: '#2DD4BF', fontWeight: '600' },
+  gridHeaderSubText: { fontSize: 12, color: '#0D9488', fontWeight: '600' },
   gridColHeaderRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     paddingHorizontal: 12, 
     paddingBottom: 8, 
     borderBottomWidth: 1, 
-    borderBottomColor: 'rgba(255,255,255,0.06)' 
+    borderBottomColor: '#E2E8F0' 
   },
   gridColHeaderLabel: { fontSize: 11, color: '#64748B', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   
   listContent: { gap: 10, paddingBottom: 10, marginTop: 4 },
-  listItemWeb: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: '#F8FAFC', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+  listItemWeb: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' },
   
   // Premium Grid Item layout
   gridItemContainer: { 
@@ -582,10 +582,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     paddingVertical: 14,
     paddingHorizontal: 12, 
-    backgroundColor: 'rgba(255,255,255,0.03)', 
+    backgroundColor: '#FFFFFF', 
     borderRadius: 16, 
     borderWidth: 1, 
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: '#E2E8F0',
     position: 'relative',
     overflow: 'hidden',
   },
@@ -601,11 +601,11 @@ const styles = StyleSheet.create({
   
   // Grid Columns Alignment
   gridColDateTime: { width: 90, paddingLeft: 4 },
-  gridDateText: { fontSize: 14, fontWeight: '700', color: '#F1F5F9' },
-  gridTimeText: { fontSize: 11, color: '#94A3B8', marginTop: 2, fontWeight: '500' },
+  gridDateText: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
+  gridTimeText: { fontSize: 11, color: '#64748B', marginTop: 2, fontWeight: '500' },
   
   gridColCarbs: { width: 44, alignItems: 'center' },
-  gridValueSub: { fontSize: 13, color: '#CBD5E1', fontWeight: '600' },
+  gridValueSub: { fontSize: 13, color: '#475569', fontWeight: '600' },
   gridLabelTiny: { fontSize: 9, color: '#64748B', fontWeight: '700', marginTop: 1 },
 
   gridColTrend: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
 
   gridColGlucose: { width: 66, alignItems: 'flex-end' },
   gridGlucoseNum: { fontSize: 21, fontWeight: '900', letterSpacing: -0.5 },
-  gridUnitTiny: { fontSize: 9, color: '#94A3B8', fontWeight: '600', marginTop: 1 },
+  gridUnitTiny: { fontSize: 9, color: '#64748B', fontWeight: '600', marginTop: 1 },
 
   emptyTextMobile: { textAlign: 'center', color: '#64748B', marginTop: 20, fontStyle: 'italic' },
 
@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#0D9488',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 6,
   },

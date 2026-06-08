@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { StyleSheet, SafeAreaView, Platform, StatusBar, Pressable, ScrollView, View, Text } from 'react-native';
+import { StyleSheet, SafeAreaView, Platform, StatusBar, Pressable, View, Text, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MealPlannerCore from '../components/MealPlannerCore';
 import WebLayout from '../components/WebLayout';
@@ -16,16 +16,18 @@ export default function MealPlannerScreen({ navigation }: any) {
         {Platform.OS !== 'web' && (
           <View style={styles.header}>
             <Pressable onPress={() => navigation.goBack()} style={({hovered}: any) => [styles.backButton, hovered && { opacity: 0.7 }] as any}>
-              <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+              <Ionicons name="arrow-back" size={22} color="#1E293B" />
             </Pressable>
             <Text style={styles.headerTitle}>{titleStr}</Text>
             <View style={{ width: 24 }} />
           </View>
         )}
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <MealPlannerCore />
-        </ScrollView>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={{ flex: 1 }}>
+            <MealPlannerCore />
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </WebLayout>
   );
@@ -36,7 +38,7 @@ const isWeb = Platform.OS === 'web';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: isWeb ? '#F8FAFC' : '#020617', // Unified Global Theme: Deep Space Navy
+    backgroundColor: '#F4F6F8', // Clinical Light Theme
     paddingTop: !isWeb ? StatusBar.currentHeight : 0,
   },
   header: {
@@ -45,20 +47,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#020617',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: '#E2E8F0',
   },
   backButton: { 
     width: 40, 
     height: 40, 
     borderRadius: 20, 
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#F8FAFC',
     alignItems: 'center', 
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: '#E2E8F0',
   },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF', letterSpacing: 0.5 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1E293B', letterSpacing: 0.5 },
   scrollContent: { padding: isWeb ? 0 : 20, maxWidth: isWeb ? '100%' : 900, alignSelf: 'center', width: '100%' },
 });

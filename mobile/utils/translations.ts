@@ -87,12 +87,12 @@ export const translations = {
   langEnBtn: { tr: 'English (EN)', en: 'English (EN)' },
 
   // Meal Planner Core
-  addNewFoodSection: { tr: 'Yeni Besin Ekle', en: 'Add New Food Item' },
+  addNewFoodSection: { tr: 'Özel Yiyecek Oluştur', en: 'Create Custom Food' },
   foodNameInputLabel: { tr: 'Besin Adı', en: 'Food Name' },
   foodNamePlaceholder: { tr: 'Örn: Muz', en: 'e.g., Banana' },
   doseInputLabel: { tr: 'Doz (Ünite)', en: 'Dose (Units)' },
   addBtn: { tr: 'Ekle', en: 'Add' },
-  databaseSection: { tr: 'Veritabanı', en: 'Database' },
+  databaseSection: { tr: 'Besin Arama', en: 'Search Food' },
   searchPlaceholder: { tr: 'Besin ara...', en: 'Search food...' },
   selectedMealSection: { tr: 'Seçili Öğün', en: 'Selected Meal' },
   emptyMealText: { tr: 'Henüz besin eklenmedi.', en: 'No food items added yet.' },

@@ -124,7 +124,7 @@ export default function AddLogScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          <Ionicons name="arrow-back" size={22} color="#1E293B" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('addLogTitle', language)}</Text>
         <View style={{ width: 40 }} />
@@ -137,7 +137,7 @@ export default function AddLogScreen({ route, navigation }: any) {
           {/* Section 1: Glucose Input */}
           <View style={styles.sectionContainer}>
             <View style={styles.inputHeaderRow}>
-              <Ionicons name="water" size={20} color="#2DD4BF" />
+              <Ionicons name="water" size={24} color="#2DD4BF" />
               <Text style={styles.glowingLabel}>{t('glucoseInputLabel', language)}</Text>
             </View>
             <TextInput 
@@ -155,7 +155,7 @@ export default function AddLogScreen({ route, navigation }: any) {
           {/* Section 2: Nutrition Input */}
           <View style={styles.sectionContainer}>
             <View style={styles.inputHeaderRow}>
-              <Ionicons name="restaurant" size={20} color="#2DD4BF" />
+              <Ionicons name="restaurant" size={24} color="#2DD4BF" />
               <Text style={styles.glowingLabel}>{t('nutritionSection', language)}</Text>
             </View>
 
@@ -199,7 +199,7 @@ export default function AddLogScreen({ route, navigation }: any) {
           {liveInsight && (
             <Animated.View entering={FadeIn.duration(400)} style={styles.insightBanner}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <Ionicons name="warning" size={22} color="#F59E0B" />
+                <Ionicons name="warning" size={24} color="#F59E0B" />
                 <Text style={styles.insightBannerTitle}>{t('expertAlertTitle', language)}</Text>
               </View>
               <Text style={styles.insightBannerText}>{liveInsight}</Text>
@@ -211,7 +211,7 @@ export default function AddLogScreen({ route, navigation }: any) {
           {/* Section 3: Tags & Exercise Toggle */}
           <View style={styles.sectionContainer}>
             <View style={styles.inputHeaderRow}>
-              <Ionicons name="pricetag" size={20} color="#2DD4BF" />
+              <Ionicons name="pricetag" size={24} color="#2DD4BF" />
               <Text style={styles.glowingLabel}>{t('tagSelectionLabel', language)}</Text>
             </View>
             <View style={styles.tagsContainer}>
@@ -229,7 +229,7 @@ export default function AddLogScreen({ route, navigation }: any) {
             {/* Exercise Mode Toggle */}
             <View style={styles.switchContainer}>
               <View style={styles.switchLabelRow}>
-                <Ionicons name="fitness" size={22} color="#2DD4BF" />
+                <Ionicons name="fitness" size={26} color="#2DD4BF" />
                 <Text style={styles.switchLabelText}>{t('exerciseModeLabel', language)}</Text>
               </View>
               <Switch
@@ -242,7 +242,7 @@ export default function AddLogScreen({ route, navigation }: any) {
 
             {isExerciseMode && (
               <View style={styles.warningBanner}>
-                <Ionicons name="information-circle" size={20} color="#38BDF8" />
+                <Ionicons name="information-circle" size={24} color="#38BDF8" />
                 <Text style={styles.warningBannerText}>
                   {t('exerciseBannerText', language)}
                 </Text>
@@ -266,7 +266,7 @@ export default function AddLogScreen({ route, navigation }: any) {
                 onPress={handleSave}
                 disabled={isSaving}
               >
-                <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
                 <Text style={styles.saveButtonText}>{isSaving ? 'Kaydediliyor...' : t('saveToLogBtn', language)}</Text>
               </TouchableOpacity>
             </Animated.View>
@@ -281,7 +281,7 @@ export default function AddLogScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#020617', // Unified Global Theme: Deep Space Navy
+    backgroundColor: '#F4F6F8', // Clinical Light Theme
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   header: {
@@ -290,132 +290,123 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#020617',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: '#E2E8F0',
   },
   iconBtn: {
     width: 40, 
     height: 40, 
     borderRadius: 20, 
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#F8FAFC',
     alignItems: 'center', 
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: '#E2E8F0',
   },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF', letterSpacing: 0.5 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1E293B', letterSpacing: 0.5 },
   content: { padding: 20, paddingBottom: 60 },
   
-  // Unified single Glassmorphism card container
   singleGlassCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#E2E8F0',
     padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
   },
   sectionContainer: {
     marginBottom: 16,
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#E2E8F0',
     marginVertical: 16,
   },
-
   inputHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
   
-  // Glowing Teal text labels
   glowingLabel: { 
-    fontSize: 17, 
+    fontSize: 18, 
     fontWeight: '800', 
-    color: '#2DD4BF',
-    textShadowColor: 'rgba(45, 212, 191, 0.45)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
+    color: '#0D9488', // Teal Dark
     letterSpacing: 0.5,
   },
-  subLabel: { fontSize: 13, fontWeight: '600', color: '#94A3B8', marginBottom: 6, marginTop: 8 },
+  subLabel: { fontSize: 16, fontWeight: '600', color: '#64748B', marginBottom: 8, marginTop: 12 },
   
-  // Dark navy input fields
   darkNavyInput: { 
-    backgroundColor: 'rgba(2, 6, 23, 0.75)', 
+    backgroundColor: '#F8FAFC', 
     borderWidth: 1, 
-    borderColor: 'rgba(45, 212, 191, 0.25)', 
+    borderColor: '#E2E8F0', 
     borderRadius: 14, 
-    padding: 14, 
-    fontSize: 16,
-    color: '#FFFFFF',
+    padding: 16, 
+    fontSize: 18,
+    color: '#1E293B',
     fontWeight: '600',
   },
 
   macroRow: { flexDirection: 'row', gap: 12, marginTop: 4 },
   macroInputContainer: { flex: 1 },
 
-  // Live Expert Advice Banner
   insightBanner: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    backgroundColor: '#FEF3C7',
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: '#FDE68A',
     borderRadius: 16,
     padding: 18,
     marginTop: 12,
     borderLeftWidth: 4,
     borderLeftColor: '#F59E0B',
   },
-  insightBannerTitle: { fontSize: 14, fontWeight: 'bold', color: '#FBBF24', letterSpacing: 0.5 },
-  insightBannerText: { fontSize: 14, color: '#F8FAFC', lineHeight: 20, fontWeight: '500' },
+  insightBannerTitle: { flex: 1, fontSize: 16, fontWeight: 'bold', color: '#D97706', letterSpacing: 0.5, flexShrink: 1, flexWrap: 'wrap' },
+  insightBannerText: { flex: 1, fontSize: 16, color: '#92400E', lineHeight: 24, fontWeight: '500', flexShrink: 1, flexWrap: 'wrap' },
 
   tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
   tagButton: { 
-    paddingVertical: 12, 
-    paddingHorizontal: 18, 
+    paddingVertical: 14, 
+    paddingHorizontal: 20, 
     borderRadius: 20, 
     borderWidth: 1, 
-    borderColor: 'rgba(255, 255, 255, 0.1)', 
-    backgroundColor: 'rgba(0, 0, 0, 0.3)' 
+    borderColor: '#E2E8F0', 
+    backgroundColor: '#FFFFFF' 
   },
-  tagButtonActive: { backgroundColor: '#0D9488', borderColor: '#2DD4BF' },
-  tagText: { color: '#94A3B8', fontSize: 14, fontWeight: '600' },
-  tagTextActive: { color: '#FFFFFF', fontWeight: 'bold' },
+  tagButtonActive: { backgroundColor: '#F0FDFA', borderColor: '#2DD4BF' },
+  tagText: { color: '#64748B', fontSize: 16, fontWeight: '600' },
+  tagTextActive: { color: '#0F766E', fontWeight: 'bold' },
 
   switchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: '#F8FAFC',
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: '#E2E8F0',
     marginTop: 20,
   },
   switchLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  switchLabelText: { fontSize: 15, fontWeight: '600', color: '#E2E8F0' },
+  switchLabelText: { fontSize: 18, fontWeight: '600', color: '#1E293B' },
 
   warningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(56, 189, 248, 0.1)',
-    borderColor: 'rgba(56, 189, 248, 0.3)',
+    backgroundColor: '#E0F2FE',
+    borderColor: '#BAE6FD',
     borderWidth: 1,
     borderRadius: 12,
     padding: 14,
     marginTop: 12,
     gap: 10,
   },
-  warningBannerText: { flex: 1, fontSize: 13, color: '#38BDF8', fontWeight: '600', lineHeight: 18 },
+  warningBannerText: { flex: 1, fontSize: 16, color: '#0369A1', fontWeight: '600', lineHeight: 24, flexShrink: 1, flexWrap: 'wrap' },
 
-  // Emerald Neon primary button
   calcButton: { 
     backgroundColor: '#10B981', 
-    borderColor: '#34D399',
+    borderColor: '#059669',
     borderWidth: 1,
     padding: 16, 
     borderRadius: 16, 
@@ -423,23 +414,23 @@ const styles = StyleSheet.create({
     marginTop: 24,
     shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 3,
   },
-  calcButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', letterSpacing: 0.5 },
+  calcButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', letterSpacing: 0.5 },
 
   resultContainer: { 
     marginTop: 20, 
     padding: 24, 
-    backgroundColor: 'rgba(16, 185, 129, 0.08)', 
-    borderColor: '#10B981',
+    backgroundColor: '#ECFDF5', 
+    borderColor: '#A7F3D0',
     borderWidth: 1,
     borderRadius: 20, 
     alignItems: 'center', 
   },
-  resultLabel: { fontSize: 13, color: '#94A3B8', fontWeight: '700', marginBottom: 8, letterSpacing: 1 },
-  resultValue: { fontSize: 36, fontWeight: '900', color: '#10B981', marginBottom: 20 },
+  resultLabel: { fontSize: 16, color: '#059669', fontWeight: '700', marginBottom: 12, letterSpacing: 1 },
+  resultValue: { fontSize: 48, fontWeight: '900', color: '#047857', marginBottom: 24 },
   
   saveButton: { 
     flexDirection: 'row',
@@ -450,11 +441,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32, 
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#2DD4BF',
+    borderColor: '#0F766E',
     shadowColor: '#0D9488',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
   },
-  saveButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' }
+  saveButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' }
 });
