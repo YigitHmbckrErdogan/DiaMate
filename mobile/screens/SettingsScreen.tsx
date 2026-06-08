@@ -4,12 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { DiabetesContext } from '../context/DiabetesContext';
 import WebLayout from '../components/WebLayout';
+import { t } from '../utils/translations';
 
 const isWeb = Platform.OS === 'web';
 
 export default function SettingsScreen({ navigation }: any) {
-  const { carbRatio, insulinSensitivityFactor, updateSettings } = useContext(DiabetesContext);
-  
+  const { language, setLanguage, carbRatio, insulinSensitivityFactor, updateSettings } = useContext(DiabetesContext);
+
   const [cr, setCr] = useState(carbRatio.toString());
   const [isf, setIsf] = useState(insulinSensitivityFactor.toString());
 
@@ -23,28 +24,33 @@ export default function SettingsScreen({ navigation }: any) {
     const crValue = parseFloat(cr);
     const isfValue = parseFloat(isf);
 
+    const errTitle = t('errTitle', language);
+    const successTitle = t('successTitle', language);
+    const okBtn = t('okBtn', language);
+
     if (isNaN(crValue) || crValue <= 0) {
-      Alert.alert('Hata', 'Lütfen geçerli bir Karbonhidrat Oranı girin.');
+      Alert.alert(errTitle, t('errInvalidCR', language));
       return;
     }
-    
+
     if (isNaN(isfValue) || isfValue <= 0) {
-      Alert.alert('Hata', 'Lütfen geçerli bir İnsülin Duyarlılık Faktörü girin.');
+      Alert.alert(errTitle, t('errInvalidISF', language));
       return;
     }
 
     await updateSettings(crValue, isfValue);
+    const savedMsg = t('settingsSavedAlert', language);
     if (Platform.OS === 'web') {
-      alert('Ayarlarınız kaydedildi.');
+      alert(savedMsg);
     } else {
-      Alert.alert('Başarılı', 'Ayarlarınız kaydedildi.', [
-        { text: 'Tamam', onPress: () => navigation.goBack() }
+      Alert.alert(successTitle, savedMsg, [
+        { text: okBtn, onPress: () => navigation.goBack() }
       ]);
     }
   };
 
   return (
-    <WebLayout title="Settings">
+    <WebLayout title={t('settingsTitle', language)}>
       <SafeAreaView style={styles.container}>
         {/* Header (Mobile) */}
         {!isWeb && (
@@ -52,26 +58,63 @@ export default function SettingsScreen({ navigation }: any) {
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
               <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Klinik Ayarlar</Text>
+            <Text style={styles.headerTitle}>{t('settingsTitle', language)}</Text>
             <View style={{ width: 40 }} />
           </View>
         )}
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <Animated.View entering={FadeInUp.duration(500).springify()} style={[styles.content, isWeb ? styles.cardWeb : styles.glassCard]}>
+          {/* LANGUAGE CONFIG CARD */}
+          <Animated.View entering={FadeInUp.duration(400).springify()} style={[styles.content, isWeb ? styles.cardWeb : styles.glassCard, { marginBottom: 20 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <Ionicons name="options" size={24} color={isWeb ? '#10b981' : '#2DD4BF'} />
-              <Text style={isWeb ? styles.sectionTitleWeb : styles.glassSectionTitle}>Parametre Konfigürasyonu</Text>
+              <Ionicons name="globe" size={24} color={isWeb ? '#7C3AED' : '#C084FC'} />
+              <Text style={isWeb ? styles.sectionTitleWeb : [styles.glassSectionTitle, { color: '#C084FC' }]}>
+                {t('languageConfigSection', language)}
+              </Text>
             </View>
 
             <Text style={isWeb ? styles.descriptionWeb : styles.glassDescription}>
-              İnsülin hesaplamalarınızın klinik doğrulukla yapılabilmesi için lütfen güncel duyarlılık ve oran parametrelerinizi tanımlayın.
+              {t('languageDesc', language)}
+            </Text>
+
+            <View style={styles.langButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.langBtn, language === 'tr' && styles.langBtnActive]}
+                onPress={() => setLanguage('tr')}
+              >
+                <Text style={[styles.langBtnText, language === 'tr' && styles.langBtnTextActive]}>
+                  🇹🇷 {t('langTrBtn', language)}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.langBtn, language === 'en' && styles.langBtnActive]}
+                onPress={() => setLanguage('en')}
+              >
+                <Text style={[styles.langBtnText, language === 'en' && styles.langBtnTextActive]}>
+                  🇬🇧 {t('langEnBtn', language)}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+
+          {/* PARAMETER CONFIG CARD */}
+          <Animated.View entering={FadeInUp.duration(500).springify()} style={[styles.content, isWeb ? styles.cardWeb : styles.glassCard]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <Ionicons name="options" size={24} color={isWeb ? '#10b981' : '#2DD4BF'} />
+              <Text style={isWeb ? styles.sectionTitleWeb : styles.glassSectionTitle}>
+                {t('paramConfigSection', language)}
+              </Text>
+            </View>
+
+            <Text style={isWeb ? styles.descriptionWeb : styles.glassDescription}>
+              {t('paramDesc', language)}
             </Text>
 
             <View style={styles.inputGroup}>
-              <Text style={isWeb ? styles.labelWeb : styles.glassLabel}>Karbonhidrat Oranı (CR)</Text>
-              <Text style={isWeb ? styles.hintWeb : styles.glassHint}>1 Ünite insülinin kaç gram karbonhidratı karşıladığı (Örn: 10)</Text>
-              <TextInput 
+              <Text style={isWeb ? styles.labelWeb : styles.glassLabel}>{t('crLabel', language)}</Text>
+              <Text style={isWeb ? styles.hintWeb : styles.glassHint}>{t('crHint', language)}</Text>
+              <TextInput
                 style={isWeb ? styles.inputWeb : styles.glassInput}
                 keyboardType="numeric"
                 value={cr}
@@ -80,9 +123,9 @@ export default function SettingsScreen({ navigation }: any) {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={isWeb ? styles.labelWeb : styles.glassLabel}>İnsülin Duyarlılık Faktörü (ISF)</Text>
-              <Text style={isWeb ? styles.hintWeb : styles.glassHint}>1 Ünite insülinin kan şekerini kaç mg/dL düşürdüğü (Örn: 50)</Text>
-              <TextInput 
+              <Text style={isWeb ? styles.labelWeb : styles.glassLabel}>{t('isfLabel', language)}</Text>
+              <Text style={isWeb ? styles.hintWeb : styles.glassHint}>{t('isfHint', language)}</Text>
+              <TextInput
                 style={isWeb ? styles.inputWeb : styles.glassInput}
                 keyboardType="numeric"
                 value={isf}
@@ -92,7 +135,7 @@ export default function SettingsScreen({ navigation }: any) {
 
             <TouchableOpacity style={isWeb ? styles.saveButtonWeb : styles.glassSaveButton} onPress={handleSave}>
               <Ionicons name="save-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.saveButtonText}>Parametreleri Kaydet</Text>
+              <Text style={styles.saveButtonText}>{t('saveParamsBtn', language)}</Text>
             </TouchableOpacity>
           </Animated.View>
         </ScrollView>
@@ -104,7 +147,7 @@ export default function SettingsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: isWeb ? '#F8FAFC' : '#0F172A', // Crisp slate 50 on web, Global Deep Navy on mobile
+    backgroundColor: isWeb ? '#F8FAFC' : '#020617', // Unified Global Theme: Deep Space Navy
     paddingTop: !isWeb ? StatusBar.currentHeight : 0,
   },
   header: {
@@ -113,27 +156,57 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#020617',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   iconBtn: {
-    width: 40, 
-    height: 40, 
-    borderRadius: 20, 
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    alignItems: 'center', 
+    alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF', letterSpacing: 0.5 },
   scrollContent: { padding: isWeb ? 0 : 20 },
-  content: { 
+  content: {
     maxWidth: isWeb ? 600 : '100%',
     width: '100%',
   },
-  
+
+  // Language button container tokens
+  langButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  langBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: isWeb ? '#CBD5E1' : 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: isWeb ? '#F8FAFC' : 'rgba(0, 0, 0, 0.25)',
+    alignItems: 'center',
+  },
+  langBtnActive: {
+    backgroundColor: isWeb ? '#7C3AED' : '#C084FC',
+    borderColor: isWeb ? '#6D28D9' : '#D8B4FE',
+  },
+  langBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: isWeb ? '#475569' : '#94A3B8',
+  },
+  langBtnTextActive: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+
   // Web specific styles
   cardWeb: {
     backgroundColor: '#fff',
@@ -169,29 +242,29 @@ const styles = StyleSheet.create({
   },
   glassSectionTitle: { fontSize: 18, fontWeight: '700', color: '#2DD4BF', letterSpacing: 0.5 },
   glassDescription: { fontSize: 14, color: '#CBD5E1', marginBottom: 24, lineHeight: 22, fontWeight: '500' },
-  
+
   inputGroup: { marginBottom: 20 },
   glassLabel: { fontSize: 15, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 },
   glassHint: { fontSize: 12, color: '#94A3B8', marginBottom: 8, fontWeight: '500' },
-  glassInput: { 
-    backgroundColor: 'rgba(0, 0, 0, 0.25)', 
-    borderWidth: 1, 
-    borderColor: 'rgba(255, 255, 255, 0.15)', 
-    borderRadius: 14, 
-    padding: 14, 
-    fontSize: 16, 
+  glassInput: {
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 14,
+    padding: 14,
+    fontSize: 16,
     color: '#FFFFFF',
     fontWeight: '600'
   },
-  
-  glassSaveButton: { 
+
+  glassSaveButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#0D9488', 
-    padding: 16, 
-    borderRadius: 16, 
+    backgroundColor: '#0D9488',
+    padding: 16,
+    borderRadius: 16,
     marginTop: 20,
     borderWidth: 1,
     borderColor: '#2DD4BF',

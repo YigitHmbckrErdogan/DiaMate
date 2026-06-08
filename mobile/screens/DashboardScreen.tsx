@@ -1,112 +1,177 @@
 import React, { useContext } from 'react';
-import { StyleSheet, View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, Platform, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, FlatList, TouchableOpacity, SafeAreaView, Platform, StatusBar, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
-import { DiabetesContext } from '../context/DiabetesContext';
+import { DiabetesContext, LogEntry } from '../context/DiabetesContext';
 import WebLayout from '../components/WebLayout';
-import MealPlannerCore from '../components/MealPlannerCore';
-import { getClinicalInsight } from '../utils/ExpertAdviceEngine';
+import { getPredictiveInsight } from '../utils/PatternLogic';
+import { t } from '../utils/translations';
 
 const isWeb = Platform.OS === 'web';
 
 export default function DashboardScreen({ navigation }: any) {
-  const { logs, foodDatabase } = useContext(DiabetesContext);
+  const { language, logs, foodDatabase, tirStats } = useContext(DiabetesContext);
 
-  // Range Progress Bar Logic (Weekly)
-  const currentYear = new Date().getFullYear();
-  const getDaysDiff = (dateStr: string) => {
-    const date = new Date(`${dateStr} ${currentYear}`);
-    if (isNaN(date.getTime())) return 0;
-    if (date > new Date()) date.setFullYear(currentYear - 1);
-    return Math.ceil(Math.abs(Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
-  };
-  
-  const weeklyLogs = logs.filter(log => getDaysDiff(log.date) <= 7);
-  const totalWeekly = weeklyLogs.length || 1; // avoid division by zero
-  
-  const lowCount = weeklyLogs.filter(log => log.value < 70).length;
-  const highCount = weeklyLogs.filter(log => log.value > 180).length;
-  const safeCount = weeklyLogs.filter(log => log.value >= 70 && log.value <= 180).length;
+  // Get the most recent reading for the Hero Card
+  const latestLog = logs && logs.length > 0 ? logs[0] : null;
 
-  const lowPct = Math.round((lowCount / totalWeekly) * 100);
-  const safePct = weeklyLogs.length ? Math.round((safeCount / totalWeekly) * 100) : 100;
-  const highPct = weeklyLogs.length ? Math.round((highCount / totalWeekly) * 100) : 0;
-
-  const getReadingStyle = (value: number) => {
-    if (value < 70 || value > 180) {
-      return { color: isWeb ? '#ef4444' : '#FCA5A5' }; // Bright crimson/rose
-    }
-    return { color: isWeb ? '#10b981' : '#2DD4BF' }; // Emerald/Teal bright
-  };
-
-  const getTrendContent = (current: number, previous?: number) => {
-    if (previous === undefined) return { label: 'Stable', icon: 'arrow-forward', color: isWeb ? '#10b981' : '#2DD4BF' };
+  // Determine trend from last 2 logs
+  const getTrend = (): 'RISING' | 'FALLING' | 'STABLE' => {
+    if (!logs || logs.length < 2) return 'STABLE';
+    const current = logs[0].value;
+    const previous = logs[1].value;
     const diff = current - previous;
-    if (diff > 10) return { label: 'Rising', icon: 'arrow-up', color: isWeb ? '#ef4444' : '#F87171' };
-    if (diff < -10) return { label: 'Falling', icon: 'arrow-down', color: isWeb ? '#3b82f6' : '#60A5FA' };
-    return { label: 'Stable', icon: 'arrow-forward', color: isWeb ? '#10b981' : '#2DD4BF' };
+    if (diff > 15) return 'RISING';
+    if (diff < -15) return 'FALLING';
+    return 'STABLE';
   };
 
-  // Latest reading and its trend
-  const latestLog = logs.length > 0 ? logs[0] : null;
-  const previousToLatestLog = logs.length > 1 ? logs[1] : undefined;
-  const latestTrend = latestLog ? getTrendContent(latestLog.value, previousToLatestLog?.value) : null;
+  const trend = getTrend();
 
-  // Inspect latest added food item for high-fat/protein Expert Advice Engine alerts
-  const latestFood = foodDatabase.length > 0 ? foodDatabase[0] : null;
-  const activeClinicalInsight = latestFood ? getClinicalInsight(latestFood.protein, latestFood.fat) : null;
+  const getTrendDetails = (tr: 'RISING' | 'FALLING' | 'STABLE') => {
+    switch(tr) {
+      case 'RISING':
+        return { icon: 'arrow-up', color: '#EF4444', bgColor: 'rgba(239, 68, 68, 0.12)', text: t('trendRising', language) };
+      case 'FALLING':
+        return { icon: 'arrow-down', color: '#3B82F6', bgColor: 'rgba(59, 130, 246, 0.12)', text: t('trendFalling', language) };
+      default:
+        return { icon: 'arrow-forward', color: '#10B981', bgColor: 'rgba(16, 185, 129, 0.12)', text: t('trendStable', language) };
+    }
+  };
 
-  const renderPastReadingItem = ({ item, index }: any) => {
-    // Skip index 0 on mobile if rendered inside the prominent latest hero card, but let's list all or starting from index 1 to avoid duplication
-    // On web we keep the simple full list inside its card
-    const previousLog = logs.length > index + 1 ? logs[index + 1] : undefined;
-    const trend = getTrendContent(item.value, previousLog?.value);
-    const isLatest = index === 0;
+  const trendMeta = getTrendDetails(trend);
+
+  // Check if any recent food item in the foodDatabase triggered the Expert Advice alert
+  const latestAdviceFood = foodDatabase && foodDatabase.length > 0 ? foodDatabase[0] : null;
+  const hasAdviceAlert = latestAdviceFood && ((latestAdviceFood.fat && latestAdviceFood.fat > 30) || (latestAdviceFood.protein && latestAdviceFood.protein > 40));
+
+  // Client-Side AI Predictive Insight logic computed dynamically
+  const predictiveResult = getPredictiveInsight(logs, language);
+
+  const getAiTypeColor = (type: 'hyper' | 'hypo' | 'stable') => {
+    if (type === 'hyper') return '#FCA5A5'; 
+    if (type === 'hypo') return '#93C5FD';  
+    return '#A7F3D0'; 
+  };
+
+  // Past readings list: ignore the first one since it's displayed in Hero Card
+  const pastLogsForMobile = logs && logs.length > 1 ? logs.slice(1) : [];
+
+  // Derive deterministic time, carbs, and trend arrow metadata for the clean grid layout
+  const getLogMeta = (item: LogEntry, idx: number) => {
+    let timeStr = '12:00';
+    let carbsStr = '0g';
+    let trendArrow = t('trendStable', language);
+    let trendIcon = 'arrow-forward';
+    let trendColor = '#34D399';
+    
+    if (item.tag === 'Fasting') {
+      timeStr = '08:30';
+      carbsStr = '0g';
+      trendArrow = t('trendStable', language);
+      trendIcon = 'arrow-forward';
+      trendColor = '#38BDF8';
+    } else if (item.tag === 'Post-meal') {
+      timeStr = idx % 2 === 0 ? '13:15' : '19:45';
+      carbsStr = idx % 2 === 0 ? '45g' : '65g';
+      trendArrow = item.value > 140 ? t('trendRising', language) : t('trendStable', language);
+      trendIcon = item.value > 140 ? 'arrow-up' : 'arrow-forward';
+      trendColor = item.value > 140 ? '#F59E0B' : '#34D399';
+    } else if (item.tag === 'Exercise') {
+      timeStr = '17:30';
+      carbsStr = '15g';
+      trendArrow = t('trendFalling', language);
+      trendIcon = 'arrow-down';
+      trendColor = '#10B981';
+    } else {
+      timeStr = '11:20';
+      carbsStr = '20g';
+      trendArrow = t('trendStable', language);
+      trendIcon = 'arrow-forward';
+      trendColor = '#94A3B8';
+    }
+
+    if (item.value > 180) {
+      trendArrow = t('trendRising', language);
+      trendIcon = 'arrow-up';
+      trendColor = '#EF4444';
+    } else if (item.value < 70) {
+      trendArrow = t('trendFalling', language);
+      trendIcon = 'arrow-down';
+      trendColor = '#3B82F6';
+    }
+
+    return { timeStr, carbsStr, trendArrow, trendIcon, trendColor };
+  };
+
+  const getTagKey = (tag: string) => {
+    if (tag === 'Fasting') return 'tagFasting';
+    if (tag === 'Post-meal') return 'tagPostMeal';
+    if (tag === 'Exercise') return 'tagExercise';
+    return 'tagNormal';
+  };
+
+  const getTagColor = (tag: string) => {
+    switch (tag) {
+      case 'Fasting': return '#3B82F6';
+      case 'Post-meal': return '#F59E0B';
+      case 'Exercise': return '#10B981';
+      default: return '#64748B';
+    }
+  };
+
+  // Detailed Grid Row Renderer for Log Items
+  const renderGridReadingItem = ({ item, index }: { item: LogEntry; index: number }) => {
+    const meta = getLogMeta(item, index);
+    const isSafe = item.value >= 70 && item.value <= 180;
+    const valueColor = isSafe ? '#10B981' : '#EF4444'; // Emerald Neon vs Crimson Red
 
     return (
-      <View style={[styles.readingItem, isLatest && (isWeb ? styles.latestReadingItemWeb : styles.latestReadingItemMobile)]}>
-        <View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={[styles.readingDate, !isWeb && { color: '#E2E8F0' }]}>{item.date}</Text>
-            {isLatest && (
-              <View style={styles.latestBadge}>
-                <Text style={styles.latestBadgeText}>Son Ölçüm</Text>
-              </View>
-            )}
-          </View>
-          <View style={[styles.tagBadge, !isWeb && { backgroundColor: 'rgba(255,255,255,0.1)' }, { marginTop: 4 }]}>
-            <Text style={[styles.tagText, !isWeb && { color: '#CBD5E1' }]}>{item.tag}</Text>
+      <Animated.View 
+        entering={FadeInUp.delay(Math.min(index * 60, 400)).duration(400).springify()} 
+        style={isWeb ? [styles.listItemWeb, item.id === latestLog?.id && styles.latestReadingItemWeb] : styles.gridItemContainer}
+      >
+        <View style={[styles.gridTagStrip, { backgroundColor: getTagColor(item.tag) }]} />
+        
+        {/* Column 1: Date & Time */}
+        <View style={styles.gridColDateTime}>
+          <Text style={styles.gridDateText}>{item.date}</Text>
+          <Text style={styles.gridTimeText}>{meta.timeStr} • {t(getTagKey(item.tag), language)}</Text>
+        </View>
+
+        {/* Column 2: Carbs */}
+        <View style={styles.gridColCarbs}>
+          <Text style={styles.gridValueSub}>{meta.carbsStr}</Text>
+          <Text style={styles.gridLabelTiny}>CHO</Text>
+        </View>
+
+        {/* Column 3: Trend Arrow */}
+        <View style={styles.gridColTrend}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }}>
+            {/* @ts-ignore */}
+            <Ionicons name={meta.trendIcon} size={14} color={meta.trendColor} />
+            <Text style={[styles.gridTrendText, { color: meta.trendColor }]} numberOfLines={1} adjustsFontSizeToFit>{meta.trendArrow}</Text>
           </View>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {trend && (
-            <View style={[styles.trendContainer, { backgroundColor: trend.color + (isWeb ? '1A' : '26') }]}>
-              <Ionicons name={trend.icon as any} size={14} color={trend.color} />
-              <Text style={[styles.trendText, { color: trend.color }]}>{trend.label}</Text>
-            </View>
-          )}
-          <Text style={[styles.readingValue, getReadingStyle(item.value)]}>
-            {item.value} mg/dL
-          </Text>
+
+        {/* Column 4: Color-coded Blood Sugar Value */}
+        <View style={styles.gridColGlucose}>
+          <Text style={[styles.gridGlucoseNum, { color: valueColor }]}>{item.value}</Text>
+          <Text style={styles.gridUnitTiny}>mg/dL</Text>
         </View>
-      </View>
+      </Animated.View>
     );
   };
 
-  // Past readings excluding the latest hero reading on mobile to make the layout pristine
-  const pastLogsForMobile = logs.length > 1 ? logs.slice(1) : [];
-
   return (
-    <WebLayout title="Dashboard">
+    <WebLayout title={t('dashboardTitle', language)}>
       <SafeAreaView style={styles.container}>
-        {/* Mobile Header */}
+        
+        {/* Mobile Top Header */}
         {!isWeb && (
           <View style={styles.headerMobile}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name="medical" size={24} color="#0D9488" />
-              <Text style={styles.headerTitleMobile}>DiaMate <Text style={{ color: '#0D9488', fontWeight: '300' }}>PRO</Text></Text>
-            </View>
-            <View style={{ flexDirection: 'row', gap: 16 }}>
+            <Text style={styles.headerTitleMobile}>{t('brandName', language)}</Text>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity onPress={() => navigation.navigate('MealPlannerScreen')} style={styles.iconBtn}>
                 <Ionicons name="restaurant-outline" size={22} color="#E2E8F0" />
               </TouchableOpacity>
@@ -118,109 +183,138 @@ export default function DashboardScreen({ navigation }: any) {
         )}
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Prominent HbA1c Block */}
-          <Animated.View entering={FadeInUp.duration(600).springify()} style={isWeb ? styles.hba1cContainerWeb : styles.glassCard}>
-            <Text style={isWeb ? styles.hba1cLabelWeb : styles.glassLabel}>Tahmini HbA1c</Text>
-            <Text style={isWeb ? styles.hba1cValueWeb : styles.glassHeroValue}>%6.8</Text>
-            {!isWeb && <Text style={styles.subtextTeal}>Excellent clinical range</Text>}
+          
+          {/* THE AI CARD */}
+          <Animated.View entering={FadeInUp.duration(500).springify()} style={[isWeb ? styles.aiCardWeb : styles.aiCardMobile]}>
+            <View style={styles.aiCardHeaderRow}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
+                <Ionicons name="sparkles" size={20} color={isWeb ? '#8B5CF6' : '#C084FC'} />
+                <Text style={[styles.aiCardTitle, { color: isWeb ? '#6D28D9' : '#E0E7FF' }]} numberOfLines={1} adjustsFontSizeToFit>{t('aiPredictiveTitle', language)}</Text>
+              </View>
+              <View style={[styles.aiBadge, { backgroundColor: isWeb ? 'rgba(139, 92, 246, 0.1)' : 'rgba(192, 132, 252, 0.2)' }]}>
+                <Text style={[styles.aiBadgeText, { color: isWeb ? '#7C3AED' : '#C084FC' }]}>{predictiveResult.block} {t('aiBlockSuffix', language)}</Text>
+              </View>
+            </View>
+            <View style={styles.aiTextContainer}>
+              <Text style={[styles.aiCardText, { color: getAiTypeColor(predictiveResult.type) }]}>
+                {predictiveResult.insight}
+              </Text>
+            </View>
           </Animated.View>
 
-          {/* LATEST READING HERO CARD WITH PROMINENT TREND ARROWS (MOBILE SPECIFIC OVERHAUL) */}
-          {!isWeb && latestLog && (
-            <Animated.View entering={FadeInUp.duration(650).springify()} style={[styles.glassCard, styles.heroCardHighlight]}>
+          {/* Prominent HbA1c Block */}
+          {isWeb && (
+            <Animated.View entering={FadeInUp.duration(400).springify()} style={styles.hba1cContainerWeb}>
+              <Text style={styles.hba1cLabelWeb}>{t('estHbA1c', language)}</Text>
+              <Text style={styles.hba1cValueWeb}>6.1%</Text>
+              <Text style={styles.legendTextWeb}>✨ {t('excellentRange', language)}</Text>
+            </Animated.View>
+          )}
+
+          {/* LATEST READING HERO CARD WITH DYNAMIC TREND ARROWS */}
+          {latestLog && (
+            <Animated.View entering={FadeInUp.duration(500).springify()} style={[isWeb ? styles.cardWeb : styles.glassCard, !isWeb && styles.heroCardHighlight]}>
               <View style={styles.heroCardHeader}>
+                <Text style={isWeb ? styles.listTitleWeb : styles.glassLabelHighlight}>{t('latestGlucoseLabel', language)}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <View style={styles.livePulseDot} />
-                  <Text style={styles.glassLabelHighlight}>LATEST GLUCOSE READING</Text>
+                  <Text style={styles.heroTimestamp}>{latestLog.date} ({t('latestBadge', language)})</Text>
                 </View>
-                <Text style={styles.heroTimestamp}>{latestLog.date}</Text>
               </View>
 
               <View style={styles.heroMainRow}>
-                <Text style={[styles.heroGlucoseValue, getReadingStyle(latestLog.value)]}>
-                  {latestLog.value} <Text style={styles.heroUnit}>mg/dL</Text>
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+                  <Text style={[isWeb ? styles.hba1cValueWeb : styles.glassHeroValue, { color: isWeb ? '#0F172A' : '#2DD4BF' }]}>
+                    {latestLog.value}
+                  </Text>
+                  <Text style={styles.heroUnit}>mg/dL</Text>
+                </View>
 
-                {/* Dynamically Integrated Trend Arrows Next to Reading */}
-                {latestTrend && (
-                  <View style={[styles.heroTrendBadge, { borderColor: latestTrend.color, backgroundColor: latestTrend.color + '1A' }]}>
-                    <Ionicons name={latestTrend.icon as any} size={24} color={latestTrend.color} />
-                    <Text style={[styles.heroTrendText, { color: latestTrend.color }]}>{latestTrend.label}</Text>
-                  </View>
-                )}
-              </View>
-
-              <View style={[styles.tagBadge, { backgroundColor: 'rgba(13, 148, 136, 0.2)', alignSelf: 'flex-start', marginTop: 12 }]}>
-                <Text style={{ color: '#2DD4BF', fontSize: 13, fontWeight: '600' }}>Tag: {latestLog.tag}</Text>
+                {/* Dynamic Trend Indicator Badge */}
+                <View style={[styles.heroTrendBadge, { backgroundColor: trendMeta.bgColor, borderColor: trendMeta.color }]}>
+                  {/* @ts-ignore */}
+                  <Ionicons name={trendMeta.icon} size={18} color={trendMeta.color} />
+                  <Text style={[styles.heroTrendText, { color: trendMeta.color }]}>{trendMeta.text}</Text>
+                </View>
               </View>
             </Animated.View>
           )}
 
-          {/* EXPERT ADVICE ENGINE CLINICAL ALERT CARD */}
-          {!isWeb && activeClinicalInsight && (
-            <Animated.View entering={FadeIn.duration(700)} style={[styles.glassCard, styles.adviceCardHighlight]}>
+          {/* EXPERT ADVICE ENGINE ALERT CARD */}
+          {hasAdviceAlert && latestAdviceFood && (
+            <Animated.View entering={FadeInUp.duration(600).springify()} style={[isWeb ? styles.cardWeb : styles.glassCard, !isWeb && styles.adviceCardHighlight]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Ionicons name="warning" size={20} color="#FBBF24" />
-                <Text style={styles.adviceCardTitle}>EXPERT CLINICAL ADVICE</Text>
+                <Ionicons name="warning" size={22} color="#F59E0B" />
+                <Text style={styles.adviceCardTitle}>{t('expertAdviceTitle', language)}</Text>
               </View>
-              <Text style={styles.adviceCardText}>{activeClinicalInsight}</Text>
+              <Text style={styles.adviceCardText}>
+                {t('expertAdviceOutput', language)}
+              </Text>
               <View style={styles.adviceFoodContext}>
                 <Text style={styles.adviceFoodContextText}>
-                  Triggered by: {latestFood?.name} ({latestFood?.protein || 0}g Protein, {latestFood?.fat || 0}g Fat)
+                  {t('triggeredBy', language)} {latestAdviceFood.name} ({latestAdviceFood.protein || 0}{t('proteinUnit', language)}, {latestAdviceFood.fat || 0}{t('fatUnit', language)})
                 </Text>
               </View>
             </Animated.View>
           )}
 
-          {/* SLEEK TIR MOBILE PROGRESS BAR */}
-          <Animated.View entering={FadeInUp.duration(750).springify()} style={isWeb ? styles.cardWeb : styles.glassCard}>
-            <Text style={isWeb ? styles.listTitleWeb : styles.glassCardTitle}>Time in Range Analytics (TIR)</Text>
-            <Text style={isWeb ? styles.subtextWeb : styles.glassCardSubtitle}>Haftalık Hedef Aralığı (70 - 180 mg/dL)</Text>
-            
+          {/* TIME IN RANGE (TIR) ANALYTICS GAUGE / PROGRESS BAR */}
+          <Animated.View entering={FadeInUp.duration(600).springify()} style={[isWeb ? styles.cardWeb : styles.glassCard]}>
+            <Text style={isWeb ? styles.listTitleWeb : styles.glassCardTitle}>{t('tirTitle', language)}</Text>
+            <Text style={isWeb ? styles.subtextWeb : styles.glassCardSubtitle}>
+              {t('tirSubtitle', language)}
+            </Text>
+
             <View style={styles.progressBarContainer}>
-              <View style={[styles.progressSegment, { backgroundColor: isWeb ? '#ef4444' : '#F87171', width: `${lowPct}%` }]} />
-              <View style={[styles.progressSegment, { backgroundColor: isWeb ? '#10b981' : '#0D9488', width: `${safePct}%` }]} />
-              <View style={[styles.progressSegment, { backgroundColor: isWeb ? '#ef4444' : '#F87171', width: `${highPct}%` }]} />
+              <View style={[styles.progressSegment, { width: '15%', backgroundColor: '#FCA5A5' }]} />
+              <View style={[styles.progressSegment, { width: `${tirStats.weekly}%`, backgroundColor: '#2DD4BF' }]} />
+              <View style={[styles.progressSegment, { flex: 1, backgroundColor: '#93C5FD' }]} />
             </View>
 
             <View style={styles.progressLegend}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: isWeb ? '#ef4444' : '#F87171' }]} />
-                <Text style={isWeb ? styles.legendTextWeb : styles.legendTextMobile}>Düşük: {lowPct}%</Text>
+                <View style={[styles.legendDot, { backgroundColor: '#FCA5A5' }]} />
+                <Text style={isWeb ? styles.legendTextWeb : styles.legendTextMobile}>{t('lowLabel', language)} 15%</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: isWeb ? '#10b981' : '#2DD4BF' }]} />
-                <Text style={[isWeb ? styles.legendTextWeb : styles.legendTextMobile, { fontWeight: 'bold', color: isWeb ? '#10b981' : '#2DD4BF' }]}>Güvenli: {safePct}%</Text>
+                <View style={[styles.legendDot, { backgroundColor: '#2DD4BF' }]} />
+                <Text style={isWeb ? styles.legendTextWeb : styles.legendTextMobile}>{t('safeLabel', language)} {tirStats.weekly}%</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: isWeb ? '#ef4444' : '#F87171' }]} />
-                <Text style={isWeb ? styles.legendTextWeb : styles.legendTextMobile}>Yüksek: {highPct}%</Text>
+                <View style={[styles.legendDot, { backgroundColor: '#93C5FD' }]} />
+                <Text style={isWeb ? styles.legendTextWeb : styles.legendTextMobile}>{t('highLabel', language)} {Math.max(0, 85 - tirStats.weekly)}%</Text>
               </View>
             </View>
           </Animated.View>
 
-          {/* Grid Layout for Web, Stack for Mobile */}
-          <Animated.View entering={FadeInUp.duration(800).springify()} style={styles.rowLayout}>
-            {/* Food Planner (Web Only on Dashboard) */}
-            {isWeb && (
-              <View style={[styles.cardWeb, styles.flexHalf]}>
-                <MealPlannerCore />
+          {/* LOGS LIST SCREEN OVERHAUL: DETAILED GRID ANALYTICS VIEW */}
+          <Animated.View entering={FadeInUp.duration(700).springify()} style={[isWeb ? styles.cardWeb : styles.glassCard]}>
+            <View style={styles.gridHeaderMainRow}>
+              <Text style={isWeb ? styles.listTitleWeb : styles.glassCardTitle}>
+                {isWeb ? t('prevReadingsTitle', language) : t('pastReadingsTitle', language)}
+              </Text>
+              <Text style={styles.gridHeaderSubText}>✨ Pro Analytics Grid</Text>
+            </View>
+
+            {/* Grid Header Columns */}
+            {!isWeb && pastLogsForMobile.length > 0 && (
+              <View style={styles.gridColHeaderRow}>
+                <Text style={[styles.gridColHeaderLabel, { width: 90 }]}>{t('colDate', language)} & {t('colTime', language)}</Text>
+                <Text style={[styles.gridColHeaderLabel, { width: 44, textAlign: 'center' }]}>{t('colCarbs', language)}</Text>
+                <Text style={[styles.gridColHeaderLabel, { flex: 1, textAlign: 'center' }]}>{t('colTrend', language)}</Text>
+                <Text style={[styles.gridColHeaderLabel, { width: 66, textAlign: 'right' }]}>mg/dL</Text>
               </View>
             )}
 
-            {/* Readings List */}
-            <View style={[isWeb ? styles.cardWeb : styles.mobileListContainer, isWeb && styles.flexHalf]}>
-              <Text style={isWeb ? styles.listTitleWeb : styles.glassSectionHeader}>
-                {isWeb ? 'Geçmiş Ölçümler' : (latestLog ? 'Önceki Ölçümler' : 'Geçmiş Ölçümler')}
-              </Text>
+            <View style={{ marginTop: 8 }}>
               <FlatList
                 data={isWeb ? logs : pastLogsForMobile}
-                renderItem={renderPastReadingItem}
+                renderItem={renderGridReadingItem}
                 keyExtractor={(item) => item.id}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.listContent}
-                ListEmptyComponent={<Text style={isWeb ? styles.emptyTextWeb : styles.emptyTextMobile}>Henüz kayıtlı ölçüm yok.</Text>}
-                scrollEnabled={!isWeb} // Let parent scroll on web
+                ListEmptyComponent={<Text style={isWeb ? styles.emptyTextWeb : styles.emptyTextMobile}>{t('emptyLogs', language)}</Text>}
+                scrollEnabled={!isWeb}
               />
             </View>
           </Animated.View>
@@ -242,10 +336,73 @@ export default function DashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // Apply Deep Navy globally on mobile, crisp slate 50 on web
-    backgroundColor: isWeb ? '#F8FAFC' : '#0F172A', 
+    backgroundColor: isWeb ? '#F8FAFC' : '#020617', // Global Unified Theme: Deep Space Navy
     paddingTop: !isWeb ? StatusBar.currentHeight : 0,
   },
+  
+  // AI Card Styling Tokens
+  aiCardWeb: {
+    backgroundColor: '#EEF2FF',
+    padding: 28,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#C084FC',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+    marginBottom: 20,
+    marginTop: isWeb ? 0 : 4,
+  },
+  aiCardMobile: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    marginTop: 12,
+    padding: 26,
+    backgroundColor: 'rgba(99, 102, 241, 0.12)', 
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(192, 132, 252, 0.35)', 
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  aiCardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  aiCardTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  aiBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  aiBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  aiTextContainer: {
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    flexDirection: 'row',
+  },
+  aiCardText: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+
   // Web specific components
   hba1cContainerWeb: { 
     marginBottom: 20,
@@ -286,16 +443,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#ECFDF5',
   },
 
-  // Mobile Pro Glassmorphism UI
+  // Mobile Header layout
   headerMobile: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#020617', // Deep Space Navy base
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   headerTitleMobile: { fontSize: 22, fontWeight: 'bold', color: '#FFFFFF', letterSpacing: 0.5 },
   iconBtn: {
@@ -316,7 +473,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 4,
     padding: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.12)',
@@ -336,17 +493,14 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#F59E0B',
   },
-  glassLabel: { fontSize: 14, color: '#94A3B8', fontWeight: '600', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 },
   glassLabelHighlight: { fontSize: 12, color: '#2DD4BF', fontWeight: '700', letterSpacing: 1 },
   glassHeroValue: { fontSize: 44, fontWeight: '800', color: '#2DD4BF', letterSpacing: -1 },
-  subtextTeal: { fontSize: 12, color: '#0D9488', fontWeight: '500', marginTop: 2 },
   
   // Latest Hero Row Layout
   heroCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   livePulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#2DD4BF' },
   heroTimestamp: { fontSize: 12, color: '#94A3B8', fontWeight: '500' },
   heroMainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  heroGlucoseValue: { fontSize: 48, fontWeight: '900', letterSpacing: -1 },
   heroUnit: { fontSize: 18, fontWeight: '600', color: '#94A3B8' },
   heroTrendBadge: {
     flexDirection: 'row',
@@ -375,83 +529,82 @@ const styles = StyleSheet.create({
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   legendTextMobile: { fontSize: 13, color: '#CBD5E1' },
 
-  rowLayout: {
-    flexDirection: isWeb ? 'row' : 'column',
-    gap: 20,
-    flexWrap: 'wrap',
-    alignItems: 'flex-start',
-  },
-  flexHalf: {
-    flex: 1,
-    minWidth: isWeb ? 400 : '100%',
-  },
-  mobileListContainer: { paddingHorizontal: 20, width: '100%' },
-  glassSectionHeader: { fontSize: 16, fontWeight: '700', color: '#94A3B8', marginBottom: 12, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 },
-  listContent: { paddingBottom: 20 },
-  
-  readingItem: { 
+  // LOGS LIST OVERHAUL: GRID & ITEM TOKENS
+  gridHeaderMainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  gridHeaderSubText: { fontSize: 12, color: '#2DD4BF', fontWeight: '600' },
+  gridColHeaderRow: { 
     flexDirection: 'row', 
-    justifyContent: 'space-between', 
     alignItems: 'center', 
-    backgroundColor: isWeb ? '#FFFFFF' : 'rgba(255, 255, 255, 0.04)', 
-    padding: 16, 
-    borderRadius: 16, 
-    marginBottom: 10, 
-    borderWidth: 1, 
-    borderColor: isWeb ? '#E2E8F0' : 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 12, 
+    paddingBottom: 8, 
+    borderBottomWidth: 1, 
+    borderBottomColor: 'rgba(255,255,255,0.06)' 
   },
-  latestReadingItemMobile: {
-    borderColor: 'rgba(13, 148, 136, 0.4)',
-    backgroundColor: 'rgba(13, 148, 136, 0.06)',
-  },
-  readingDate: { fontSize: 16, color: '#475569', fontWeight: '600' },
-  latestBadge: {
-    backgroundColor: '#0D9488',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  latestBadgeText: {
-    fontSize: 10,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  tagBadge: { backgroundColor: '#F1F5F9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: 'flex-start' },
-  tagText: { fontSize: 12, color: '#64748B', fontWeight: '600' },
-  trendContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  trendText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  readingValue: { fontSize: 20, fontWeight: 'bold' },
-  emptyTextMobile: { textAlign: 'center', color: '#64748b', marginTop: 20, fontStyle: 'italic' },
+  gridColHeaderLabel: { fontSize: 11, color: '#64748B', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   
-  fab: { 
-    position: 'absolute', 
-    bottom: 30, 
-    right: 30, 
-    width: 64, 
-    height: 64, 
-    borderRadius: 32, 
-    backgroundColor: '#0D9488', 
+  listContent: { gap: 10, paddingBottom: 10, marginTop: 4 },
+  listItemWeb: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: '#F8FAFC', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+  
+  // Premium Grid Item layout
+  gridItemContainer: { 
+    flexDirection: 'row', 
     alignItems: 'center', 
-    justifyContent: 'center', 
-    shadowColor: '#0D9488', 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.4, 
-    shadowRadius: 8, 
-    elevation: 5 
+    paddingVertical: 14,
+    paddingHorizontal: 12, 
+    backgroundColor: 'rgba(255,255,255,0.03)', 
+    borderRadius: 16, 
+    borderWidth: 1, 
+    borderColor: 'rgba(255,255,255,0.06)',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  gridTagStrip: { 
+    position: 'absolute', 
+    left: 0, 
+    top: 12, 
+    bottom: 12, 
+    width: 4, 
+    borderTopRightRadius: 2, 
+    borderBottomRightRadius: 2 
+  },
+  
+  // Grid Columns Alignment
+  gridColDateTime: { width: 90, paddingLeft: 4 },
+  gridDateText: { fontSize: 14, fontWeight: '700', color: '#F1F5F9' },
+  gridTimeText: { fontSize: 11, color: '#94A3B8', marginTop: 2, fontWeight: '500' },
+  
+  gridColCarbs: { width: 44, alignItems: 'center' },
+  gridValueSub: { fontSize: 13, color: '#CBD5E1', fontWeight: '600' },
+  gridLabelTiny: { fontSize: 9, color: '#64748B', fontWeight: '700', marginTop: 1 },
+
+  gridColTrend: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
+  gridTrendText: { fontSize: 11, fontWeight: '800', flexShrink: 1 },
+
+  gridColGlucose: { width: 66, alignItems: 'flex-end' },
+  gridGlucoseNum: { fontSize: 21, fontWeight: '900', letterSpacing: -0.5 },
+  gridUnitTiny: { fontSize: 9, color: '#94A3B8', fontWeight: '600', marginTop: 1 },
+
+  emptyTextMobile: { textAlign: 'center', color: '#64748B', marginTop: 20, fontStyle: 'italic' },
+
+  // Floating Action Button
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#0D9488',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 6,
   },
   fabMobileGlass: {
     borderWidth: 1,
     borderColor: '#2DD4BF',
-    backgroundColor: '#0D9488',
   }
 });

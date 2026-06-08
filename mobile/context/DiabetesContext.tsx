@@ -1,5 +1,9 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Language } from '../utils/translations';
+import { db, auth } from '../utils/config/firebaseConfig';
+import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export type LogTag = 'Fasting' | 'Post-meal' | 'Exercise' | 'Normal';
 
@@ -26,6 +30,8 @@ interface TirStats {
 }
 
 interface DiabetesContextProps {
+  language: Language;
+  setLanguage: (lang: Language) => Promise<void>;
   carbRatio: number;
   insulinSensitivityFactor: number;
   logs: LogEntry[];
@@ -33,29 +39,45 @@ interface DiabetesContextProps {
   tirStats: TirStats;
   updateSettings: (cr: number, isf: number) => Promise<void>;
   addLog: (log: Omit<LogEntry, 'id'>) => Promise<void>;
+  updateLog: (id: string, updatedLog: Partial<LogEntry>) => Promise<void>;
+  deleteLog: (id: string) => Promise<void>;
   addFood: (food: Omit<FoodItem, 'id'>) => Promise<void>;
   isLoading: boolean;
 }
 
 export const DiabetesContext = createContext<DiabetesContextProps>({
+  language: 'tr',
+  setLanguage: async () => {},
   carbRatio: 10,
   insulinSensitivityFactor: 50,
   logs: [],
   foodDatabase: [],
   tirStats: { daily: 0, weekly: 0, monthly: 0 },
-  updateSettings: async () => { },
-  addLog: async () => { },
-  addFood: async () => { },
+  updateSettings: async () => {},
+  addLog: async () => {},
+  updateLog: async () => {},
+  deleteLog: async () => {},
+  addFood: async () => {},
   isLoading: true,
 });
 
 export const DiabetesProvider = ({ children }: { children: ReactNode }) => {
+  const [language, setLangState] = useState<Language>('tr');
   const [carbRatio, setCarbRatio] = useState<number>(10);
   const [insulinSensitivityFactor, setIsf] = useState<number>(50);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [foodDatabase, setFoodDatabase] = useState<FoodItem[]>([]);
   const [tirStats, setTirStats] = useState<TirStats>({ daily: 0, weekly: 0, monthly: 0 });
   const [isLoading, setIsLoading] = useState(true);
+
+  const withTimeout = (promise: Promise<any>, ms: number) => {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Bağlantı zaman aşımına uğradı (Firebase veritabanınız henüz kurulmamış olabilir)')), ms)
+      )
+    ]);
+  };
 
   // Calculate TIR Stats
   useEffect(() => {
@@ -89,42 +111,19 @@ export const DiabetesProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [logs]);
 
-  // Load from AsyncStorage
+  // Load purely local settings from AsyncStorage
   useEffect(() => {
     const loadData = async () => {
       try {
+        const storedLang = await AsyncStorage.getItem('@language');
         const storedCr = await AsyncStorage.getItem('@carbRatio');
         const storedIsf = await AsyncStorage.getItem('@isf');
-        const storedLogs = await AsyncStorage.getItem('@logs');
-        const storedFoods = await AsyncStorage.getItem('@foodDatabase');
 
+        if (storedLang === 'tr' || storedLang === 'en') {
+          setLangState(storedLang);
+        }
         if (storedCr) setCarbRatio(parseFloat(storedCr));
         if (storedIsf) setIsf(parseFloat(storedIsf));
-        
-        if (storedLogs) {
-          setLogs(JSON.parse(storedLogs));
-        } else {
-          // Initialize with mock data if nothing exists
-          const initialMockData: LogEntry[] = [
-            { id: '1', date: '15 Mar', value: 145, tag: 'Fasting' },
-            { id: '2', date: '14 Mar', value: 132, tag: 'Post-meal' },
-            { id: '3', date: '13 Mar', value: 110, tag: 'Normal' },
-            { id: '4', date: '12 Mar', value: 150, tag: 'Exercise' },
-            { id: '5', date: '11 Mar', value: 185, tag: 'Fasting' }, // intentionally high
-            { id: '6', date: '10 Mar', value: 65, tag: 'Normal' },   // intentionally low
-          ];
-          setLogs(initialMockData);
-          await AsyncStorage.setItem('@logs', JSON.stringify(initialMockData));
-        }
-
-        if (storedFoods) {
-          setFoodDatabase(JSON.parse(storedFoods));
-        } else {
-          const initialFoods: FoodItem[] = [{ id: '1', name: 'Apple', carbs: 15, historicalDose: 1.5 }];
-          setFoodDatabase(initialFoods);
-          await AsyncStorage.setItem('@foodDatabase', JSON.stringify(initialFoods));
-        }
-
       } catch (error) {
         console.error('Failed to load settings from storage', error);
       } finally {
@@ -133,6 +132,102 @@ export const DiabetesProvider = ({ children }: { children: ReactNode }) => {
     };
     loadData();
   }, []);
+
+  // Firestore Real-time Listeners (Logs and Foods)
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // --- LOGS LISTENER ---
+        const qLogs = query(
+          collection(db, 'logs'),
+          where('userId', '==', user.uid)
+        );
+
+        const unsubscribeLogs = onSnapshot(qLogs, (snapshot) => {
+          const fetchedLogs = snapshot.docs.map(docSnapshot => {
+            const data = docSnapshot.data({ serverTimestamps: 'estimate' });
+            return {
+              id: docSnapshot.id,
+              date: data.date,
+              value: data.value,
+              tag: data.tag,
+              createdAt: data.createdAt ? data.createdAt.toMillis() : Date.now()
+            };
+          });
+          
+          fetchedLogs.sort((a, b) => b.createdAt - a.createdAt);
+          
+          const typedLogs: LogEntry[] = fetchedLogs.map(log => ({
+            id: log.id,
+            date: log.date,
+            value: log.value,
+            tag: log.tag as LogTag
+          }));
+
+          setLogs(typedLogs);
+        }, (error) => {
+          console.error("Firestore logs snapshot error:", error);
+          alert("Kayıtları çekerken hata: " + error.message);
+        });
+
+        // --- FOODS LISTENER ---
+        const qFoods = query(
+          collection(db, 'foods'),
+          where('userId', '==', user.uid)
+        );
+
+        const unsubscribeFoods = onSnapshot(qFoods, (snapshot) => {
+          const fetchedFoods = snapshot.docs.map(docSnapshot => {
+            const data = docSnapshot.data({ serverTimestamps: 'estimate' });
+            return {
+              id: docSnapshot.id,
+              name: data.name,
+              carbs: data.carbs,
+              protein: data.protein,
+              fat: data.fat,
+              historicalDose: data.historicalDose,
+              createdAt: data.createdAt ? data.createdAt.toMillis() : Date.now()
+            };
+          });
+          
+          fetchedFoods.sort((a, b) => b.createdAt - a.createdAt);
+          
+          const typedFoods: FoodItem[] = fetchedFoods.map(food => ({
+            id: food.id,
+            name: food.name,
+            carbs: food.carbs,
+            protein: food.protein,
+            fat: food.fat,
+            historicalDose: food.historicalDose
+          }));
+
+          setFoodDatabase(typedFoods.length > 0 ? typedFoods : [{ id: '1', name: 'Apple', carbs: 15, historicalDose: 1.5 }]);
+        }, (error) => {
+          console.error("Firestore foods snapshot error:", error);
+          alert("Yemekleri çekerken hata: " + error.message);
+        });
+
+        return () => {
+          unsubscribeLogs();
+          unsubscribeFoods();
+        };
+      } else {
+        setLogs([]);
+        setFoodDatabase([{ id: '1', name: 'Apple (Demo)', carbs: 15, historicalDose: 1.5 }]);
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  const setLanguage = async (lang: Language) => {
+    try {
+      setLangState(lang);
+      await AsyncStorage.setItem('@language', lang);
+    } catch (error) {
+      console.error('Failed to save language', error);
+    }
+  };
 
   const updateSettings = async (cr: number, isf: number) => {
     try {
@@ -146,35 +241,61 @@ export const DiabetesProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addLog = async (logData: Omit<LogEntry, 'id'>) => {
-    const newLog: LogEntry = {
-      ...logData,
-      id: Math.random().toString(36).substring(2, 9),
-    };
-    const updatedLogs = [newLog, ...logs];
-    setLogs(updatedLogs);
+    if (!auth.currentUser) {
+      alert("Hata: Oturumunuz kapalı. Lütfen giriş yapın.");
+      return;
+    }
     try {
-      await AsyncStorage.setItem('@logs', JSON.stringify(updatedLogs));
-    } catch (error) {
-      console.error('Failed to save log', error);
+      await withTimeout(addDoc(collection(db, 'logs'), {
+        ...logData,
+        userId: auth.currentUser.uid,
+        createdAt: serverTimestamp()
+      }), 5000);
+    } catch (error: any) {
+      alert('Kayıt eklenemedi (Veritabanı reddetti): ' + error.message);
+      console.error('Failed to add log to Firestore', error);
+    }
+  };
+
+  const updateLog = async (id: string, updatedLog: Partial<LogEntry>) => {
+    try {
+      const logRef = doc(db, 'logs', id);
+      await withTimeout(updateDoc(logRef, updatedLog), 5000);
+    } catch (error: any) {
+      alert('Kayıt güncellenemedi: ' + error.message);
+      console.error('Failed to update log in Firestore', error);
+    }
+  };
+
+  const deleteLog = async (id: string) => {
+    try {
+      const logRef = doc(db, 'logs', id);
+      await withTimeout(deleteDoc(logRef), 5000);
+    } catch (error: any) {
+      alert('Kayıt silinemedi: ' + error.message);
+      console.error('Failed to delete log from Firestore', error);
     }
   };
 
   const addFood = async (foodData: Omit<FoodItem, 'id'>) => {
-    const newFood: FoodItem = {
-      ...foodData,
-      id: Math.random().toString(36).substring(2, 9),
-    };
-    const updatedFoods = [newFood, ...foodDatabase];
-    setFoodDatabase(updatedFoods);
+    if (!auth.currentUser) {
+      alert("Hata: Oturumunuz kapalı. Yemek kaydedilemedi.");
+      return;
+    }
     try {
-      await AsyncStorage.setItem('@foodDatabase', JSON.stringify(updatedFoods));
-    } catch (error) {
+      await withTimeout(addDoc(collection(db, 'foods'), {
+        ...foodData,
+        userId: auth.currentUser.uid,
+        createdAt: serverTimestamp()
+      }), 5000);
+    } catch (error: any) {
+      alert('Yemek eklenemedi: ' + error.message);
       console.error('Failed to save food', error);
     }
   }
 
   return (
-    <DiabetesContext.Provider value={{ carbRatio, insulinSensitivityFactor, logs, foodDatabase, tirStats, updateSettings, addLog, addFood, isLoading }}>
+    <DiabetesContext.Provider value={{ language, setLanguage, carbRatio, insulinSensitivityFactor, logs, foodDatabase, tirStats, updateSettings, addLog, updateLog, deleteLog, addFood, isLoading }}>
       {children}
     </DiabetesContext.Provider>
   );
