@@ -246,34 +246,39 @@ export const DiabetesProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     try {
+      const cleanData = Object.fromEntries(Object.entries(logData).filter(([_, v]) => v !== undefined));
       await withTimeout(addDoc(collection(db, 'logs'), {
-        ...logData,
+        ...cleanData,
         userId: auth.currentUser.uid,
         createdAt: serverTimestamp()
-      }), 5000);
+      }), 10000);
     } catch (error: any) {
-      alert('Kayıt eklenemedi (Veritabanı reddetti): ' + error.message);
+      alert('Kayıt eklenemedi: ' + error.message);
       console.error('Failed to add log to Firestore', error);
+      throw error;
     }
   };
 
   const updateLog = async (id: string, updatedLog: Partial<LogEntry>) => {
     try {
       const logRef = doc(db, 'logs', id);
-      await withTimeout(updateDoc(logRef, updatedLog), 5000);
+      const cleanData = Object.fromEntries(Object.entries(updatedLog).filter(([_, v]) => v !== undefined));
+      await withTimeout(updateDoc(logRef, cleanData), 10000);
     } catch (error: any) {
       alert('Kayıt güncellenemedi: ' + error.message);
       console.error('Failed to update log in Firestore', error);
+      throw error;
     }
   };
 
   const deleteLog = async (id: string) => {
     try {
       const logRef = doc(db, 'logs', id);
-      await withTimeout(deleteDoc(logRef), 5000);
+      await withTimeout(deleteDoc(logRef), 10000);
     } catch (error: any) {
       alert('Kayıt silinemedi: ' + error.message);
       console.error('Failed to delete log from Firestore', error);
+      throw error;
     }
   };
 
@@ -283,14 +288,16 @@ export const DiabetesProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     try {
+      const cleanData = Object.fromEntries(Object.entries(foodData).filter(([_, v]) => v !== undefined));
       await withTimeout(addDoc(collection(db, 'foods'), {
-        ...foodData,
+        ...cleanData,
         userId: auth.currentUser.uid,
         createdAt: serverTimestamp()
-      }), 5000);
+      }), 10000);
     } catch (error: any) {
       alert('Yemek eklenemedi: ' + error.message);
       console.error('Failed to save food', error);
+      throw error;
     }
   }
 

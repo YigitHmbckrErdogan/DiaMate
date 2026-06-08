@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { StyleSheet, View, Text, TextInput, FlatList, Pressable, Platform, Alert, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { DiabetesContext, FoodItem } from '../context/DiabetesContext';
 import { getClinicalInsight } from '../utils/ExpertAdviceEngine';
 import { t } from '../utils/translations';
@@ -11,6 +12,7 @@ interface SelectedFood extends FoodItem {
 
 export default function MealPlannerCore() {
   const { language, foodDatabase, addFood } = useContext(DiabetesContext);
+  const navigation = useNavigation<any>();
 
   // New Food Form State
   const [newFoodName, setNewFoodName] = useState('');
@@ -249,6 +251,19 @@ export default function MealPlannerCore() {
                 <Text style={styles.insightText}>{insight}</Text>
               </View>
             )}
+
+            {/* Contextual CTA Button */}
+            {selectedMeal.length > 0 && (
+              <Pressable 
+                onPress={() => navigation.navigate('AddLogScreen', { carbs: totalCarbs.toFixed(1), tag: 'Post-meal' })}
+                style={({hovered}: any) => [
+                  styles.ctaButton, 
+                  hovered && styles.buttonHover
+                ] as any}
+              >
+                <Text style={styles.ctaButtonText}>🍽️ Bunları Şimdi Yiyorum</Text>
+              </Pressable>
+            )}
         </View>
       </View>
     </View>
@@ -395,5 +410,22 @@ const styles = StyleSheet.create({
   warningBannerText: { flex: 1, fontSize: 13, color: '#38BDF8', fontWeight: '600', lineHeight: 18 },
   
   insightBox: { marginTop: 16, padding: 16, backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: '#F59E0B', borderWidth: 1, borderRadius: 14, borderLeftWidth: 4, borderLeftColor: '#F59E0B', flexDirection: 'row', alignItems: 'center', gap: 12 },
-  insightText: { flex: 1, fontSize: 13, color: '#F8FAFC', fontWeight: '600', lineHeight: 18 }
+  insightText: { flex: 1, fontSize: 13, color: '#F8FAFC', fontWeight: '600', lineHeight: 18 },
+  
+  ctaButton: {
+    backgroundColor: 'rgba(13, 148, 136, 0.85)',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#2DD4BF',
+    marginTop: 20,
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+  },
+  ctaButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', letterSpacing: 0.5 }
 });

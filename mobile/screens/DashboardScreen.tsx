@@ -5,12 +5,16 @@ import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { DiabetesContext, LogEntry } from '../context/DiabetesContext';
 import WebLayout from '../components/WebLayout';
 import { getPredictiveInsight } from '../utils/PatternLogic';
+import { analyzeRisk } from '../utils/PredictiveEngine';
 import { t } from '../utils/translations';
 
 const isWeb = Platform.OS === 'web';
 
 export default function DashboardScreen({ navigation }: any) {
   const { language, logs, foodDatabase, tirStats } = useContext(DiabetesContext);
+
+  // Analyze true predictive risk from IOB/COB math model
+  const riskAnalysis = analyzeRisk(logs, foodDatabase);
 
   // Get the most recent reading for the Hero Card
   const latestLog = logs && logs.length > 0 ? logs[0] : null;
@@ -237,6 +241,22 @@ export default function DashboardScreen({ navigation }: any) {
                   <Text style={[styles.heroTrendText, { color: trendMeta.color }]}>{trendMeta.text}</Text>
                 </View>
               </View>
+            </Animated.View>
+          )}
+
+          {/* CRITICAL HYPOGLYCEMIA RISK CARD (Predictive Engine) */}
+          {riskAnalysis.riskLevel === 'LOW' && (
+            <Animated.View entering={FadeInUp.duration(500).springify()} style={[isWeb ? styles.cardWeb : styles.glassCard, styles.criticalRiskCard]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <Ionicons name="warning" size={24} color="#EF4444" />
+                <Text style={styles.criticalRiskTitle}>KRİTİK UYARI</Text>
+              </View>
+              <Text style={styles.criticalRiskText}>
+                {riskAnalysis.message}
+              </Text>
+              <Text style={styles.criticalRiskSubtext}>
+                Öngörülen Kan Şekeri: {riskAnalysis.predictedBG} mg/dL
+              </Text>
             </Animated.View>
           )}
 
@@ -496,6 +516,17 @@ const styles = StyleSheet.create({
   glassLabelHighlight: { fontSize: 12, color: '#2DD4BF', fontWeight: '700', letterSpacing: 1 },
   glassHeroValue: { fontSize: 44, fontWeight: '800', color: '#2DD4BF', letterSpacing: -1 },
   
+  // Critical Risk Card
+  criticalRiskCard: {
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    borderLeftWidth: 4,
+    borderLeftColor: '#EF4444',
+  },
+  criticalRiskTitle: { fontSize: 15, fontWeight: 'bold', color: '#FCA5A5', letterSpacing: 0.5 },
+  criticalRiskText: { fontSize: 14, color: '#FEE2E2', lineHeight: 22, fontWeight: '600' },
+  criticalRiskSubtext: { fontSize: 13, color: '#FCA5A5', marginTop: 8, fontStyle: 'italic', fontWeight: '500' },
+
   // Latest Hero Row Layout
   heroCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   livePulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#2DD4BF' },

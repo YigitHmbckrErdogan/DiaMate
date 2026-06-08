@@ -1,13 +1,28 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../utils/config/firebaseConfig';
 
 const LoginScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+
+  const getErrorMessage = (code: string) => {
+    switch (code) {
+      case 'auth/invalid-email': return 'Geçersiz e-posta formatı. Lütfen geçerli bir e-posta adresi yazın (örn: yigit@gmail.com).';
+      case 'auth/user-not-found': return 'Bu e-posta adresiyle kayıtlı bir hesap bulunamadı.';
+      case 'auth/wrong-password': return 'Hatalı şifre girdiniz.';
+      case 'auth/invalid-credential': return 'E-posta veya şifre hatalı.';
+      case 'auth/email-already-in-use': return 'Bu e-posta adresi zaten kullanımda. Lütfen giriş yapmayı deneyin.';
+      case 'auth/weak-password': return 'Şifreniz çok zayıf. Lütfen en az 6 karakterli bir şifre belirleyin.';
+      case 'auth/operation-not-allowed': return 'HATA: Firebase Panelinde "Email/Password" yöntemi aktif edilmemiş!';
+      default: return 'Bir hata oluştu: ' + code;
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     if (Platform.OS === 'web') {
@@ -21,8 +36,35 @@ const LoginScreen = () => {
         alert('Giriş başarısız oldu. Lütfen tekrar deneyin.');
       }
     } else {
-      console.log('Google Auth Triggered (Native Fallback)');
+      alert('Google ile giriş mobilde (Expo Go) desteklenmiyor. Lütfen e-posta ile giriş yapın.');
+    }
+  };
+
+  const handleEmailSignIn = async () => {
+    if (!email || !password) {
+      alert('Lütfen e-posta ve şifre girin.');
+      return;
+    }
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), password);
       navigation.replace('Dashboard');
+    } catch (error: any) {
+      console.error('Email Login Error:', error);
+      alert('Giriş başarısız: ' + getErrorMessage(error.code));
+    }
+  };
+
+  const handleEmailRegister = async () => {
+    if (!email || !password) {
+      alert('Lütfen e-posta ve şifre girin.');
+      return;
+    }
+    try {
+      await createUserWithEmailAndPassword(auth, email.trim(), password);
+      navigation.replace('Dashboard');
+    } catch (error: any) {
+      console.error('Email Register Error:', error);
+      alert('Kayıt başarısız: ' + getErrorMessage(error.code));
     }
   };
 
@@ -37,14 +79,52 @@ const LoginScreen = () => {
             <Text style={styles.subtitle}>Clinical Diabetes Management</Text>
           </View>
 
-          <TouchableOpacity 
-            style={styles.googleButton} 
-            activeOpacity={0.8}
-            onPress={handleGoogleSignIn}
-          >
-            <Ionicons name="logo-google" size={24} color="#ffffff" style={styles.googleIcon} />
-            <Text style={styles.buttonText}>Sign in with Google</Text>
-          </TouchableOpacity>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="E-posta"
+              placeholderTextColor="#94a3b8"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Şifre"
+              placeholderTextColor="#94a3b8"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
+
+          <View style={styles.emailButtonContainer}>
+            <TouchableOpacity style={styles.emailButton} onPress={handleEmailSignIn}>
+              <Text style={styles.buttonText}>Giriş Yap</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.emailButton, styles.registerButton]} onPress={handleEmailRegister}>
+              <Text style={styles.buttonText}>Kayıt Ol</Text>
+            </TouchableOpacity>
+          </View>
+
+          {Platform.OS === 'web' && (
+            <>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>VEYA</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity 
+                style={styles.googleButton} 
+                activeOpacity={0.8}
+                onPress={handleGoogleSignIn}
+              >
+                <Ionicons name="logo-google" size={24} color="#ffffff" style={styles.googleIcon} />
+                <Text style={styles.buttonText}>Google (Sadece Web)</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -105,6 +185,56 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#94a3b8',
     textAlign: 'center',
+  },
+  inputContainer: {
+    width: '100%',
+    marginBottom: 20,
+    gap: 12,
+  },
+  input: {
+    backgroundColor: 'rgba(2, 6, 23, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: 14,
+    color: '#fff',
+    fontSize: 16,
+  },
+  emailButtonContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 10,
+    marginBottom: 24,
+  },
+  emailButton: {
+    flex: 1,
+    backgroundColor: '#0D9488',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2DD4BF',
+  },
+  registerButton: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  dividerText: {
+    color: '#94a3b8',
+    paddingHorizontal: 10,
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   googleButton: {
     flexDirection: 'row',

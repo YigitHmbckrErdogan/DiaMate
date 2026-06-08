@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, SafeAreaView, Platform, StatusBar, ScrollView, Alert, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
@@ -6,17 +6,22 @@ import { DiabetesContext, LogTag } from '../context/DiabetesContext';
 import { getClinicalInsight } from '../utils/ExpertAdviceEngine';
 import { t } from '../utils/translations';
 
-export default function AddLogScreen({ navigation }: any) {
+export default function AddLogScreen({ route, navigation }: any) {
   const { language, carbRatio, insulinSensitivityFactor, addLog, addFood } = useContext(DiabetesContext);
 
+  const initialCarbs = route?.params?.carbs?.toString() || '';
+  const initialTag = route?.params?.tag || 'Normal';
+
   const [bloodSugar, setBloodSugar] = useState('');
-  const [carbs, setCarbs] = useState('');
+  const [carbs, setCarbs] = useState(initialCarbs);
   const [protein, setProtein] = useState('');
   const [fat, setFat] = useState('');
-  const [tag, setTag] = useState<LogTag>('Normal');
+  const [tag, setTag] = useState<LogTag>(initialTag);
   const [insulinDose, setInsulinDose] = useState<string | null>(null);
   const [isExerciseMode, setIsExerciseMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const tags: LogTag[] = ['Fasting', 'Post-meal', 'Exercise', 'Normal'];
 
@@ -50,6 +55,15 @@ export default function AddLogScreen({ navigation }: any) {
       calculateInsulin();
     }
   }, [isExerciseMode, bloodSugar, carbs, language]);
+
+  // Auto-scroll when dose is calculated to ensure save button is visible
+  useEffect(() => {
+    if (insulinDose !== null && scrollViewRef.current) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 150);
+    }
+  }, [insulinDose]);
 
   const handleToggleExercise = (val: boolean) => {
     setIsExerciseMode(val);
@@ -116,7 +130,7 @@ export default function AddLogScreen({ navigation }: any) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* SINGLE LARGE GLASSMORPHISM CARD CONSOLIDATING THE ENTIRE FORM */}
         <Animated.View entering={FadeInUp.duration(400).springify()} style={styles.singleGlassCard}>
           
